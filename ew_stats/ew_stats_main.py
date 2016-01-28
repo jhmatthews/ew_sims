@@ -125,6 +125,33 @@ class selection:
 		self.general = self.has_o3 * self.z
 
 
+
+class simulation:
+
+	'''
+	a class which contains a set of quantities for different angles 
+	which are measures of how well that specific model did compared
+	to the data
+
+	UNFINISHED
+	'''
+
+	def __init__(self, shape, NPTS):
+
+		f_bal = np.zeros(shape)
+		means = np.zeros(shape)
+		std_dev = np.zeros(shape)
+		ks = np.zeros(shape)
+		ks_p_value = np.zeros(shape)
+
+
+		
+
+
+
+
+
+
 thetamins = np.arange(0,90,5)
 thetamax = np.arange(45,90,5)
 f_bal = np.zeros([len(thetamins), len(thetamax)])
@@ -169,10 +196,14 @@ for i, thmin in enumerate(thetamins):
 			# and apply to EW measurements
 			costhetas, mock_bal_flags = get_mock_angles(thmin, NPTS, max_angle=thmax)
 
+			# mock data needs to be divided by emissivity function
 			mock_data = mock_data / emissivity_function(costhetas)
+
+			# selections based on flags returned from angle sim
 			select_mock_bals = (mock_bal_flags == "b")
 			select_mock_nonbals = (mock_bal_flags == "q")
 
+			# bal fraction- just number of objects!
 			bal_frac = float(np.sum(select_mock_bals)) / float(NPTS)
 
 			ews = data["ew_o3"]
@@ -181,9 +212,6 @@ for i, thmin in enumerate(thetamins):
 				mock_data = np.log10(mock_data)
 				ews = np.log10(ews)
 
-			# decorate the figures a bit
-			set_subplot_ticks()
-
 			'''
 			If the K-S statistic is small or the p-value is high, 
 			then we cannot reject the hypothesis that the distributions 
@@ -191,6 +219,8 @@ for i, thmin in enumerate(thetamins):
 			'''
 			print i, j
 			print '------------------'
+
+			# record the values in some arrays
 			ks_test[i,j] = stats.ks_2samp(mock_data[select_mock_bals], ews[select.general*select.mgbal])[1]
 			f_bal[i,j] = bal_frac
 			print bal_frac, ks_test[i,j]
