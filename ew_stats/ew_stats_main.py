@@ -19,34 +19,48 @@ cm_use=get_viridis()
 
 def get_dist(z):
 
-	'''distance in pc from redshift'''
+	'''approximate distance in pc from redshift'''
 
 	return (z * 3e5 / 70.0) * 1e6
 
 
 def emissivity_function(costheta):
 
+	'''this could be modified to query an AGNSPEC spectrum'''
+
 	return costheta
 
 
 def is_source_detected(costheta):
+	'''
+	apply a selection effect according to the emissivity emissivity_function
+	'''
 
+	# random number
 	dv = np.random.random()
 
 	r = np.power(dv, 1.0/3.0)
 
 	d = get_dist(r) * PARSEC
 
+	# now we've got a random distance proportional to volume
+	# get the flux assuming some luminosity (1e46?)
 	flux = (1e46 * emissivity_function(costheta)) / (4.0*np.pi*d*d)
 
+	# work out if above our detection limit which is abritrary at the moment
 	d_detect = get_dist(1.0) * PARSEC
 	detection_limit = 1e45 / (4.0*np.pi*d*d)
 
-	#return (flux > detection_limit)
 	return True
 
 
 def get_mock_angles(THRESHOLD, NPTS, max_angle=None):
+	'''
+	generate angles according to solid angle and 
+	apply selection effect 
+
+	return flags of whether bal or not
+	'''
 
 	costhetas = np.zeros(NPTS)
 	bal_flags = np.empty(NPTS, dtype="string")
@@ -80,6 +94,9 @@ def get_mock_angles(THRESHOLD, NPTS, max_angle=None):
 
 
 def set_subplot_ticks():
+	'''
+	plotting hack
+	'''
 
 	xlabel(r"$W_{\lambda}$ (\AA)", fontsize=24)
 	xlim(-1,4)
@@ -179,6 +196,9 @@ for i, thmin in enumerate(thetamins):
 			print bal_frac, ks_test[i,j]
 			print 
 
+
+
+# below here it's just plotting...
 figure(figsize=(13,7))
 subplot(1,2,1)
 
