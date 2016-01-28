@@ -1,0 +1,351 @@
+J/ApJS/194/45            QSO properties from SDSS-DR7              (Shen+, 2011)
+================================================================================
+A catalog of quasar properties from Sloan Digital Sky Survey data release  7.
+    Shen Y., Richards G.T., Strauss M.A., Hall P.B., Schneider D.P.,
+    Snedden S., Bizyaev D., Brewington H., Malanushenko V., Malanushenko E.,
+    Oravetz D., Pan K., Simmons A.
+   <Astrophys. J. Suppl. Ser., 194, 45 (2011)>
+   =2011ApJS..194...45S
+================================================================================
+ADC_Keywords: Equivalent widths ; Line Profiles ; QSOs ; Photometry, SDSS ;
+              Active gal. nuclei ; Spectroscopy ; Surveys
+Keywords: black hole physics - galaxies: active - quasars: general - surveys
+
+Abstract:
+    We present a compilation of properties of the 105783 quasars in the
+    Sloan Digital Sky Survey Data Release 7 (DR7) quasar catalog (Cat.
+    VII/260). In this product, we compile continuum and emission line
+    measurements around the H{alpha}, H{beta}, MgII, and CIV regions, as
+    well as other quantities such as radio properties, and flags
+    indicating broad absorption line quasars, disk emitters, etc. We also
+    compile virial black hole mass estimates based on various
+    calibrations. For the fiducial virial mass estimates we use the
+    Vestergaard & Peterson (VP06; 2006ApJ...641..689V) calibrations for
+    H{beta} and CIV, and our own calibration for MgII which matches the
+    VP06 H{beta} masses on average. We describe the construction of this
+    catalog and discuss its limitations.
+
+File Summary:
+--------------------------------------------------------------------------------
+ FileName    Lrecl  Records   Explanations
+--------------------------------------------------------------------------------
+ReadMe          80        .   This file
+catalog.dat   1247   105783   Catalog of quasar properties from SDSS DR7
+--------------------------------------------------------------------------------
+
+See also:
+   VII/260 : The SDSS-DR7 quasar catalog (Schneider+, 2010)
+   VII/241 : The 2dF QSO Redshift Survey (Croom+ 2004)
+   J/ApJS/194/42    : SDSS-DR3 MgII-based black hole masses (Rafiee+, 2011)
+   J/MNRAS/405/2302 : Improved redshifts for SDSS quasar spectra (Hewett+, 2010)
+   J/ApJ/692/758    : BAL QSOs in SDSS-DR5 (Gibson+, 2009)
+   J/AJ/137/3884    : Quasar candidates selected from the SDSS (Richards+, 2009)
+   J/ApJ/680/169    : SDSS DR5 virial black hole masses (Shen+, 2008)
+   J/AJ/131/2766    : Quasar luminosity function from SDSS-DR3 (Richards+, 2006)
+   J/ApJS/166/470   : SDSS-Spitzer type I QSOs IR photometry (Richards+, 2006)
+   J/ApJ/641/78     : CIV variability in 105 SDSS quasars (Wilhite+, 2006)
+   J/ApJ/639/766    : SDSS-DR3 strong MgII absorbers (Prochter+, 2006)
+   J/AJ/121/31      : High-redshift quasars in SDSS (Fan+, 2001)
+   J/AJ/122/503     : SDSS u*g*r*i*z* photometry and redshift of QSOs
+                      (Anderson+, 2001)
+   http://das.sdss.org/va/qso_properties_dr7/dr7.htm : Supplementary materials
+                                                       of the paper
+
+Byte-by-byte Description of file: catalog.dat
+--------------------------------------------------------------------------------
+    Bytes Format Units    Label     Explanations
+--------------------------------------------------------------------------------
+    1- 18  A18   ---      SDSS      SDSS-DR7 name (HHMMSS.ss+DDMMSS.s; J2000)
+   20- 28  F9.5  deg      RAdeg     Right ascension in decimal degrees (J2000)
+   30- 38  F9.5  deg      DEdeg     Declination in decimal degrees (J2000)
+   40- 47  F8.6  ---      z         SDSS-DR7 redshift (Cat. VII/260)
+   49- 52  I4    ---      Plate     Spectroscopic plate number
+   54- 56  I3    ---      Fiber     Spectroscopic fiber number
+   58- 62  I5    ---      MJD       Modified Julian Date of spectroscopic
+                                    observation
+   64- 72  I9    ---      Flag      Target selection flag (PRIMTARGET) (1)
+       74  I1    ---      N         [1/9] Number of spectroscopic observations
+       76  I1    ---      Uni       [0/2] Uniform selection flag
+                                    (0=non-uniformly selected)
+   78- 83  F6.2  mag      iMAG      Absolute i-band magnitude (normalized at
+                                    z=2), K-corrected following Richards et
+                                    al. (2006, Cat. J/AJ/131/2766)
+   85- 90  F6.3 [10-7W]   logLbol   ?=0 Bolometric luminosity (2)
+   92- 97  F6.3 [10-7W] e_logLbol   ?=-1 Measurement error in logLbol
+       99  I1    ---      BAL       [0/3] BAL flag (3)
+  101-102  I2    ---      FIRST     [-1/2] FIRST (Cat. VIII/90) radio flag (4)
+  104-114  E11.5 mJy      F6cm      ?=0 Observed radio flux density at
+                                    rest-frame 6cm
+  116-122  F7.3  [Jy]     logFnu    ?=0 Observed optical flux density at
+                                    restframe 2500{AA} (log(erg/s/cm^2^/Hz))
+  124-133  E10.4 ---      RL        ?=-1 Radio loudness (R=F6cm/F2500A)
+  135-140  F6.3 [10-7W]   logL5100  ?=0 Monochromatic luminosity at 5100{AA}
+  142-147  F6.3 [10-7W] e_logL5100  ?=-1 Measurement error in logL5100
+  149-154  F6.3 [10-7W]   logL3000  ?=0 Monochromatic luminosity at 3000{AA}
+  156-161  F6.3 [10-7W] e_logL3000  ?=-1 Measurement error in logL3000
+  163-168  F6.3 [10-7W]   logL1350  ?=0 Monochromatic luminosity at 1350{AA}
+  170-175  F6.3 [10-7W] e_logL1350  ?=-1 Measurement error in logL1350
+  177-182  F6.3 [10-7W]   logLBHa   ?=0 Broad H{alpha} line luminosity (erg/s)
+  184-189  F6.3 [10-7W] e_logLBHa   ?=-1 Measurement error in logLBHa
+  191-197  F7.1  km/s     W(BHa)    ?=0 FWHM of broad H{alpha} line
+  199-205  F7.1  km/s   e_W(BHa)    ?=-1 Measurement error in W(Ha)   
+  207-212  F6.1  0.1nm    EWBHa     ?=0 Restframe equivalent width of broad Ha
+  214-221  E8.2  0.1nm  e_EWBHa     ?=-1 Measurement error in EWBHa
+  223-227  F5.2 [10-7W]   logLNHa   ?=0 Narrow H{alpha} line luminosity (erg/s)
+  229-233  F5.2 [10-7W] e_logLNHa   ?=-1 Measurement error in logLNHa
+  235-241  F7.2  km/s     W(NHa)    ?=0 FWHM of narrow H{alpha}
+  243-248  F6.2  km/s   e_W(NHa)    ?=-1 Measurement error in W(NHa) 
+  250-254  F5.1  0.1nm    EWNHa     ?=0 Restframe equivalent width of narrow Ha
+  256-260  F5.1  0.1nm  e_EWNHa     ?=-1 Measurement error in EWNHa
+  262-266  F5.2 [10-7W]   logLNII   ?=0 Luminosity of [NII]6585 line (erg/s)
+  268-272  F5.2 [10-7W] e_logLNII   ?=-1 Measurement error in logLNII
+  274-278  F5.1  0.1nm    EWNII     ?=0 Restframe equivalent width of [NII]6585
+  280-287  E8.2  0.1nm  e_EWNII     ?=-1 Measurement error in EWNII
+  289-293  F5.2 [10-7W]   logLSII1  ?=0 Luminosity of [SII]6718 line (erg/s)
+  295-299  F5.2 [10-7W] e_logLSII1  ?=-1 Measurement error in logLSII1
+  301-305  F5.1  0.1nm    EWSII1    ?=0 Restframe equivalent width of [SII]6718
+  307-312  F6.1  0.1nm  e_EWSII1    ?=-1 Measurement error in EWSII1
+  314-318  F5.2 [10-7W]   logLSII3  ?=0 Luminosity of [SII]6732 line (erg/s)
+  320-324  F5.2 [10-7W] e_logLSII3  ?=-1 Measurement error in logLSII3
+  326-330  F5.1  0.1nm    EWSII3    ?=0 Restframe equivalent width of [SII]6732
+  332-339  E8.2  0.1nm  e_EWSII3    ?=-1 Measurement error in EWSII3
+  341-345  F5.1  0.1nm    EWFeHa    ?=0 Restframe equivalent width of Fe within
+                                    6000-6500{AA} ({AA})
+  347-351  F5.1  0.1nm  e_EWFeHa    ?=-1 Measurement error in EWFeHa
+  353-358  F6.1  ---      alpHa     [-5/3]?=-999 Power-law slope {alpha} for the
+                                    continuum fit for H{alpha}
+  360-363  F4.1  ---    e_alpHa     ?=-1 Measurement error in alpHa   
+  365-367  I3    ---      NpHa      [0,241] Number of good pixels for the
+                                    restframe 6400-6765{AA} region
+  369-373  F5.2  ---      SN(Ha)    ?=0 Median S/N per pixel for the restframe
+                                    6400-6765{AA} region
+  375-379  F5.2  ---      chi2Ha    ?=-1 Reduced chi2 for the Ha fit
+  381-385  F5.2 [10-7W]   logLBHb   ?=0 Broad H{beta} line luminosity (erg/s)
+  387-391  F5.2 [10-7W] e_logLBHb   ?=-1 Measurement error in logLBHb
+  393-399  F7.1  km/s     W(BHb)    ?=0 FWHM of broad H{beta}
+  401-407  F7.1  km/s   e_W(BHb)    ?=-1 Measurement error in W(BHb)  
+  409-415  F7.1  0.1nm    EWBHb     ?=0 Restframe equivalent width of broad Hb
+  417-424  E8.2  0.1nm  e_EWBHb     ?=-1 Measurement error in EWBHb
+  426-430  F5.2 [10-7W]   logLNHb   ?=0 Narrow H{beta} line luminosity (erg/s)
+  432-436  F5.2 [10-7W] e_logLNHb   ?=-1 Measurement error in logLNHb
+  438-443  F6.1  km/s     W(NHb)    ?=0 FWHM of narrow Hb
+  445-449  F5.1  km/s   e_W(NHb)    ?=-1 Measurement error in W(NHb) 
+  451-455  F5.1  0.1nm    EWNHb     ?=0 Restframe equivalent width of narrow Hb
+  457-464  E8.2  0.1nm  e_EWNHb     ?=-1 Measurement error in EWNHb
+  466-472  F7.1  km/s     W(NHb)g   ?=0 FWHM of broad H{beta} using a single
+                                    Gaussian fit
+  474-477  F4.1 [10-7W]   logLOIII4 ?=0 Luminosity of [OIII]4959 line (erg/s)
+  479-482  F4.1 [10-7W] e_logLOIII4 ?=-1 Measurement error in logLOIII
+  484-488  F5.1  0.1nm    EWOIII4   ?=0 Restframe equivalent width of
+                                    [OIII]4959
+  490-497  E8.2  0.1nm  e_EWOIII4   ?=-1 Measurement error in EWOIII
+  499-502  F4.1 [10-7W]   logLOIII5 ?=0 Luminosity of [OIII]5007 line (erg/s)
+  504-507  F4.1 [10-7W] e_logLOIII5 ?=-1 Measurement error in logLOIII5
+  509-513  F5.1  0.1nm    EWOIII5   ?=0 Restframe equivalent width of
+                                    [OIII]5007
+  515-522  E8.2  0.1nm  e_EWOIII5   ?=-1 Measurement error in EWOIII5
+  524-530  F7.1  0.1nm    EWFeHb    ?=0 Restframe equivalent width of Fe
+                                    within 4435-4685{AA} ({AA})
+  532-539  E8.2  0.1nm  e_EWFeHb    ?=-1 Measurement error in EWFeHb
+  541-546  F6.1  ---      alpHb     ?=-999 Power-law slope {alpha} for the
+                                    continuum fit for H{beta}
+  548-551  F4.1  ---    e_alpHb     ?=-1 Measurement error in alpHb  
+  553-555  I3    ---      NpHb      Number of good pixels for the restframe
+                                    4750-4950{AA} region
+  557-561  F5.2  ---      SN(Hb)    ?=0 Median S/N per pixel for the restframe
+                                    4750-4950{AA} region
+  563-569  F7.2  ---      chi2Hb    ?=-1 Reduced chi2 for the H{beta} fit
+  571-575  F5.2 [10-7W]   logLMgII  ?=0 Luminosity of the whole MgII line
+  577-581  F5.2 [10-7W] e_logLMgII  ?=-1 Measurement error in logLMgII
+  583-589  F7.1  km/s     W(MgII)   ?=0 FWHM of the whole MgII
+  591-597  F7.1  km/s   e_W(MgII)   ?=-1 Measurement error in W(MgII) 
+  599-605  F7.1  0.1nm    EWMgII    ?=0 Restframe equivalent width of the
+                                    whole MgII ({AA})
+  607-614  E8.2  0.1nm  e_EWMgII    ?=-1 Measurement error in EWMgII
+  616-620  F5.2 [10-7W]   logLBMgII ?=0 Luminosity of the broad MgII line
+  622-626  F5.2 [10-7W] e_logLBMgII ?=-1 Measurement error in logLBMgII
+  628-634  F7.1  km/s     W(BMgII)  ?=0 FWHM of the broad MgII
+  636-642  F7.1  km/s   e_W(BMgII)  ?=-1 Measurement error in W(BMgII)
+  644-650  F7.1  0.1nm    EWBMgII   ?=0 Restframe equivalent width of the
+                                    broad MgII ({AA})
+  652-659  E8.2  0.1nm  e_EWBMgII   ?=-1 Measurement error in EWBMgII
+  661-667  F7.1  km/s     W(BMgII)g ?=0 FWHM of the broad MgII using a single
+                                    Gaussian fit
+  669-674  F6.1  0.1nm    FeMgII    ?=0 Restframe equivalent width of Fe
+                                    within 2200-3090{AA}
+  676-681  F6.1  0.1nm  e_FeMgII    ?=-1 Measurement error in FeMgII
+  683-688  F6.1  ---      alphMgII  ?=-999 Power-law slope {alpha} for the 
+                                    continuum fit for MgII [-5,3]
+  690-693  F4.1  ---    e_alphMgII  ?=-1 Measurement error in alphMgII
+  695-697  I3    ---      NpMgII i   Number of good pixels for the restframe
+                                    2700-2900{AA} region
+  699-703  F5.2  ---      SN(MgII)  ?=0 Median S/N per pixel for the restframe
+                                    2700-2900{AA} region
+  705-711  F7.2  ---      chi2MgII  ?=-1 Reduced chi2 for the MgII fit
+  713-717  F5.2 [10-7W]   logLCIV   ?=0 Luminosity of the whole CIV line
+  719-723  F5.2 [10-7W] e_logLCIV   ?=-1 Measurement error in logLCIV
+  725-731  F7.1  km/s     W(CIV)    ?=0 FWHM of the whole CIV
+  733-739  F7.1  km/s   e_W(CIV)    ?=-1 Measurement error in W(CIV) 
+  741-747  F7.2  0.1nm    EWCIV     ?=0 Restframe equivalent width of the
+                                    whole CIV {AA}
+  749-756  E8.2  0.1nm  e_EWCIV     ?=-1 Measurement error in EWCIV
+  758-763  F6.1  ---      alpCIV    ?=-999 Power-law slope {alpha} for the
+                                    continuum fit for CIV
+  765-768  F4.1  ---    e_alpCIV    ?=-1 Measurement error in alpCIV  
+  770-772  I3    ---      NpCIV     Number of good pixels for the restframe
+                                    1500-1600{AA} region
+  774-778  F5.2  ---      SN(CIV)   ?=0 Median S/N per pixel for the restframe
+                                    1500-1600{AA} region
+  780-785  F6.2  ---      chi2CIV   ?=-1 Reduced chi2 for the CIV fit
+  787-794  F8.1  km/s     V(BHa)    ?=3E+05 Velocity shift of broad H{alpha}
+  796-802  F7.1  km/s   e_V(BHa)    ?=-1 Measurement error in V(BHa)
+  804-811  F8.1  km/s     V(NHa)    ?=3E+05 Velocity shift of narrrow H{alpha}
+  813-817  F5.1  km/s   e_V(NHa)    ?=-1 Measurement error in V(NHa)
+  819-826  F8.1  km/s     V(BHb)    ?=3E+05 Velocity shift of broad H{beta}
+  828-835  E8.2  km/s   e_V(BHb)    ?=-1 Measurement error in V(BHb)
+  837-844  F8.1  km/s     V(NHb)    ?=3E+05 Velocity shift of narrow H{beta}
+  846-851  F6.1  km/s   e_V(NHb)    ?=-1 Measurement error in V(NHb)
+  853-860  F8.1  km/s     V(BMgII)  ?=3E+05 Velocity shift of broad MgII
+  862-867  F6.1  km/s   e_V(BMgII)  ?=-1 Measurement error in V(BMgII)
+  869-876  F8.1  km/s     V(CIVp)   ?=3E+05 Velocity shift of the CIV peak
+  878-883  F6.1  km/s   e_V(CIVp)   ?=-1 Measurement error in V(CIVp)
+  885-889  F5.2 [Msun]    logBHHM 126  ?=0 Virial BH mass based on H{beta}
+                                    (McLure and Dunlop 2004MNRAS.352.1390M)
+  891-895  F5.2 [Msun]  e_logBHHM   ?=-1 Measurement error in logBHHM
+  897-901  F5.2 [Msun]    logBHHV   ?=0 Virial BH mass based on H{beta}
+                                    (Vestergaard + Peterson 2006ApJ...641..689V)
+  903-907  F5.2 [Msun]  e_logBHHV   ?=-1 Measurement error in logBHHV
+  909-913  F5.2 [Msun]    logBHMM   ?=0 Virial BH mass based on MgII
+                                    (McLure and Dunlop, 2004MNRAS.352.1390M)
+  915-919  F5.2 [Msun]  e_logBHMM   ?=-1 Measurement error in logBHMM
+  921-925  F5.2 [Msun]    logBHMV   ?=0 Virial BH mass based on MgII
+                                    (Vestergaard + Osmer, 2009, J/ApJ/699/800)
+  927-931  F5.2 [Msun]  e_logBHMV   ?=-1 Measurement error in logBHMV
+  933-937  F5.2 [Msun]    logBHMS   ?=0 Virial BH mass based on MgII
+                                        (this paper)
+  939-943  F5.2 [Msun]  e_logBHMS   ?=-1 Measurement error in logBHMS
+  945-949  F5.2 [Msun]    logBHCV   ?=0 Virial BH mass based on CIV
+                                    (Vestergaard + Peterson 2006ApJ...641..689V)
+  951-955  F5.2 [Msun]  e_logBHCV   ?=-1 Measurement error in logBHCV
+  957-961  F5.2 [Msun]    logBH  38   ?=0 The adopted fiducial virial BH mass
+  963-967  F5.2 [Msun]  e_logBH     ?=-1 Measurement error in logBH
+  969-975  F7.2  [-]      logEdd 40   [-5/1.3]?=-999 Eddington ratio based on the
+                                          fiducial virial BH mass
+      977  I1    ---      SpF  41     [0/6] Special interest flag (5)
+  979-986  F8.6  ---      zHW       Improved redshifts from Hewett & Wild 2010
+                                    (J/MNRAS/405/2302)
+  988-995  F8.6  ---    e_zHW       Error of the HW redshift
+  997-1002 F6.3  mag      umag      ?=0 SDSS u-band PSF magnitude; (nearly) AB
+ 1004-1009 F6.3  mag      gmag      ?=0 SDSS g-band PSF magnitude; (nearly) AB
+ 1011-1016 F6.3  mag      rmag      ?=0 SDSS r-band PSF magnitude; (nearly) AB
+ 1018-1023 F6.3  mag      imag      ?=0 SDSS i-band PSF magnitude; (nearly) AB
+ 1025-1030 F6.3  mag      zmag      ?=0 SDSS z-band PSF magnitude; (nearly) AB
+ 1032-1037 F6.3  mag    e_umag      ?=0 SDSS u PSF magnitude error
+ 1039-1044 F6.3  mag    e_gmag      ?=0 SDSS g PSF magnitude error
+ 1046-1051 F6.3  mag    e_rmag      ?=0 SDSS r PSF magnitude error
+ 1053-1058 F6.3  mag    e_imag      ?=0 SDSS i PSF magnitude error
+ 1060-1065 F6.3  mag    e_zmag      ?=0 SDSS z PSF magnitude error
+ 1067-1072 F6.3  mag      umag0     ?=0 SDSS u PSF magnitudes corrected for
+                                    Galactic extinction using the SFD map
+ 1074-1079 F6.3  mag      gmag0     ?=0 SDSS g PSF magnitudes corrected for
+                                    Galactic extinction using the SFD map
+ 1081-1086 F6.3  mag      rmag0     ?=0 SDSS r PSF magnitudes corrected for
+                                    Galactic extinction using the SFD map
+ 1088-1093 F6.3  mag      imag0     ?=0 SDSS i PSF magnitudes corrected for
+                                    Galactic extinction using the SFD map
+ 1095-1100 F6.3  mag      zmag0     ?=0 SDSS z PSF magnitudes corrected for
+                                    Galactic extinction using the SFD map
+ 1102-1109 F8.3  mag      Delg-i    ?=-999. Deviation from the mean g-i color
+                                    at each redshift (see Richards et al.
+                                     2002AJ....124....1R for details)
+ 1111-1116 F6.3 [cm-2]    logNH     logarithm of Galactic HI column density
+ 1118-1123 F6.3  ct/s     CR        ?=-9 log RASS full band count rate;
+                                         30" matching radius
+ 1125-1130 F6.3  arcsec   oRASS     [0/30]?=-1 SDSS/RASS separation
+ 1132-1138 F7.3  mag      Jmag      ?=0 2MASS J-band magnitude; 2" matching
+                                         radius
+ 1140-1146 F7.3  mag      Hmag      ?=0 2MASS H-band magnitude; 2" matching
+                                         radius
+ 1148-1154 F7.3  mag      Ksmag     ?=0 2MASS Ks-band magnitude; 2" matching
+                                         radius
+ 1156-1162 F7.3  mag    e_Jmag      ?=0 2MASS Jmag error
+ 1164-1170 F7.3  mag    e_Hmag      ?=0 2MASS Hmag error
+ 1172-1178 F7.3  mag    e_Ksmag     ?=0 2MASS Ksmag error
+ 1180-1184 F5.3  arcsec   o2M       [0/2]?=-1 SDSS/2MASS separation
+ 1186-1191 F6.3  mag      W1mag     ?=-1 WISE 3.4um magnitude (6)
+ 1193-1198 F6.3  mag      W2mag     ?=-1 WISE 4.6um magnitude (6)
+ 1200-1205 F6.3  mag      W3mag     ?=-1 WISE 12um magnitude (6)
+ 1207-1212 F6.3  mag      W4mag     ?=-1 WISE 22um magnitude (6)
+ 1214-1219 F6.3  mag    e_W1mag     ?=-1 W1mag error
+ 1221-1226 F6.3  mag    e_W2mag     ?=-1 W2mag error (0 when upper limit) (7)
+ 1228-1233 F6.3  mag    e_W3mag     ?=-1 W3mag error (0 when upper limit) (7)
+ 1235-1240 F6.3  mag    e_W4mag     ?=-1 W4mag error (0 when upper limit) (7)
+ 1242-1247 F6.3  arcsec   oWISE     [0/6]?=-1 SDSS/WISE separation
+--------------------------------------------------------------------------------
+Note (1): The PRIMTARGET bit values are (in hex and decimal):
+   QSO_HIZ           = 0x1          = bit # 0 =        1
+   QSO_CAP           = 0x2          = bit # 1 =        2
+   QSO_SKIRT         = 0x4          = bit # 2 =        4
+   QSO_FIRST_CAP     = 0x8          = bit # 3 =        8
+   QSO_FIRST_SKIRT   = 0x10         = bit # 4 =       16
+   QSO_MAG_OUTLIER   = 0x2000000    = bit #25 = 33554432
+   QSO_REJECT        = 0x20000000   = bit #29 =536870912
+   GALAXY_RED        = 0x20         = bit # 5 =       32
+   GALAXY_RED_II     = 0x4000000    = bit #26 = 67108864
+   GALAXY            = 0x40         = bit # 6 =       64
+   GALAXY_BIG        = 0x80         = bit # 7 =      128
+   GALAXY_BRIGHT_CORE= 0x100        = bit # 8 =      256
+   ROSAT_A           = 0x200        = bit # 9 =      512
+   ROSAT_B           = 0x400        = bit #10 =     1024
+   ROSAT_C           = 0x800        = bit #11 =     2048
+   ROSAT_D           = 0x1000       = bit #12 =     4096
+   ROSAT_E           = 0x8000000    = bit #27 =134217728
+   STAR_BHB          = 0x2000       = bit #13 =     8192
+   STAR_CARBON       = 0x4000       = bit #14 =    16384
+   STAR_BROWN_DWARF  = 0x8000       = bit #15 =    32768
+   STAR_SUB_DWARF    = 0x10000      = bit #16 =    65536
+   STAR_CATY_VAR     = 0x20000      = bit #17 =   131072
+   STAR_RED_DWARF    = 0x40000      = bit #18 =   262144
+   STAR_WHITE_DWARF  = 0x80000      = bit #19 =   524288
+   STAR_PN           = 0x10000000   = bit #28 =268435456
+   SERENDIP_BLUE     = 0x100000     = bit #20 =  1048576
+   SERENDIP_FIRST    = 0x200000     = bit #21 =  2097152
+   SERENDIP_RED      = 0x400000     = bit #22 =  4194304
+   SERENDIP_DISTANT  = 0x800000     = bit #23 =  8388608
+   SERENDIP_MANUAL   = 0x100000     = bit #24 = 16777216
+   QSO_MAG_OUTLIER   = 0x200000     = bit #25 = 33554432
+   GALAXY_RED_II     = 0x400000     = bit #26 = 67108864
+   ROSAT_E           = 0x800000     = bit #27 =134217728
+   STAR_PN           = 0x1000000    = bit #28 =268435456
+   QSO_REJECT        = 0x2000000    = bit #29 =536870912
+   SOUTHERN_SURVEY   = 0x8000000    = bit #31 =-2147483648
+Note (2): Bolometric luminosity (in units of erg/s); using bolometric
+   corrections derived from the composite SED from Richards et al. (2006,
+   Cat. J/ApJS/166/470)
+Note (3): Broad Absorption Line QSO flag (from Gibson et al. 2009, 
+     Cat. J/ApJ/692/758) as follows:
+    0 = nonBALQSO or no wavelength coverage;
+    1 = CIV BALQSO;
+    2 = MgII BALQSO;
+    3 = both CIV and MgII BALQSO
+Note (4): FIRST (Cat. VIII/71) radio flag as follows:
+   -1 = not in FIRST footprint;
+    0 = FIRST undetected;
+    1 = core-dominant;
+    2 = lobe-dominant (radio morphology classification following Jiang et al.
+        2007ApJ...656..680J)
+Note (5): Special interest flag (in hex and decimal):
+    DISK_EMITTER                = 0x1          = bit # 0 =        1
+    DISK_EMITTER_CANDIDATE      = 0x2          = bit # 1 =        2
+    DOUBLE_PEAKED_OIII          = 0x4          = bit # 2 =        4
+Note (6): WISE 3.4, 4.6, 12, 22um profile-fitting magnitudes; Vega;
+    Preliminary Data Release (2011-04-14, coverage map); 6" matching radius.
+Note (7): WISE magnitude errors 0 indicates 95% confidence upper limit.
+--------------------------------------------------------------------------------
+
+History:
+    Copied at http://das.sdss.org/va/qso_properties_dr7/dr7.htm;
+    May_2011 version.
+
+================================================================================
+(End)                                     Emmanuelle Perret [CDS]    27-Feb-2012
