@@ -16,6 +16,7 @@ import matplotlib.mlab as mlab
 import sdss_sub_data as sub
 from matplotlib.colors import LinearSegmentedColormap
 
+colors = get_colors()
 
 def get_dist(z):
 
@@ -131,16 +132,20 @@ class simulation:
 	'''
 	a class which contains a set of quantities for different angles 
 	which are measures of how well that specific model did compared
-	to the data
-
-	UNFINISHED
+	to the data. Also allows one to run the sim.
 	'''
 
 	def __init__(self, thetamin, thetamax, data):
 
 		'''
-		shape	array-like
-		NPTS 	integer
+		thetamin 	array-like
+					array of thetamins used 
+
+		thetamax 	array-like
+					array of thetamaxes used 
+
+		data 		dictionary
+					data read in from the SDSS quasar catalog 
 		'''
 
 		shape = (len(thetamin), len(thetamax))
@@ -202,18 +207,27 @@ class simulation:
 					print '------------------'
 
 					# record the values in some arrays
-					self.ks_p_value[i,j] = stats.ks_2samp(mock_data[select_mock_bals], ews[select.general*select.mgbal])[1]
+					self.ks_p_value[i,j] = stats.ks_2samp(self.mock_data[select_mock_bals], ews[select.general*select.mgbal])[1]
 					self.f_bal[i,j] = bal_frac
 
 					# store the standard dev and mean of the dataset
 					self.std_dev[i,j] = np.std(mock_data[select_mock_bals])
 					self.mean[i,j] = np.mean(mock_data[select_mock_bals])
 
+					figure()
+					hist(np.log10(ews[select.general*select.mgbal]), normed=True, facecolor=colors[0], alpha=0.5, bins=np.arange(-2,3,0.1))
+					hist(np.log10(mock_data[select_mock_bals]), normed=True, facecolor=colors[1], alpha=0.5, bins=np.arange(-2,3,0.1))
+					savefig("hist_%i_%i.png" % (thmin, thmax), dpi=100)
+					clf()
 
 					print bal_frac, self.ks_p_value[i,j]
 					print 
 
 		return 0
+
+
+
+
 		
 
 def plot_contour(sim):
@@ -228,7 +242,10 @@ def plot_contour(sim):
 	figure(figsize=(13,7))
 	subplot(1,2,1)
 
-	contourf(sim.thetamax, sim.thetamin, np.log10(sim.ks_test), extend='both', levels=np.arange(-20,0,0.5), cmap=cm_use)
+	sim.ks_p_value = np.ma.masked_array(sim.ks_p_value, mask=(sim.ks_p_value == 0) )
+	sim.f_bal = np.ma.masked_array(sim.f_bal, mask=(sim.f_bal == 0) )
+
+	contourf(sim.thetamax, sim.thetamin, np.log10(sim.ks_p_value), extend='both', levels=np.arange(-20,0,0.5), cmap=cm_use)
 	#contour(thetamax, thetamins, np.log10(ks_test), levels=np.log10(np.array([0.001,0.05,0.32])), c="k")
 	ylabel(r"$\theta_{min}$", fontsize=20)
 	xlabel(r"$\theta_{max}$", fontsize=20)
@@ -262,8 +279,8 @@ def plot_contour2(sim):
 	mu = np.mean(d_use)
 	sigma = np.std(d_use)
 
-	sim.mean[(sim.mean == 0)] = -1e50
-	sim.std_dev[(sim.std_dev == 0)] = -1e50
+	sim.mean = np.ma.masked_array(sim.mean, mask=(sim.mean == 0) )
+	sim.std_dev = np.ma.masked_array(sim.std_dev, mask=(sim.std_dev == 0) )
 
 	cm_use=get_viridis()
 	# below here it's just plotting...
@@ -278,7 +295,7 @@ def plot_contour2(sim):
 
 	ylabel(r"$\theta_{min}$", fontsize=20)
 	xlabel(r"$\theta_{max}$", fontsize=20)
-	title(r"$\Delta \mu$", fontsize=20)
+	title(r"$\Delta \mu = \mu_{EW,mock} - \mu_{EW,BALs}$", fontsize=20)
 
 	subplot(1,2,2)
 	contourf(sim.thetamax, sim.thetamin, sim.std_dev - sigma, extend="max", cmap=cm_use, levels=np.arange(-10,50,1))
@@ -290,7 +307,7 @@ def plot_contour2(sim):
 	
 	ylabel(r"$\theta_{min}$", fontsize=20)
 	xlabel(r"$\theta_{max}$", fontsize=20)
-	title(r"$\Delta \sigma$", fontsize=20)
+	title(r"$\Delta \sigma = \sigma_{EW,mock} - \sigma_{EW,BALs}$", fontsize=20)
 
 	subplots_adjust(left=0.1,right=0.97,top=0.93)
 	savefig("contour2.png", dpi=200)
@@ -321,4 +338,5 @@ if __name__ == "__main__":
 	sim.run(select)
 
 	# make the contour plots
+	plot_contour(sim)
 	plot_contour2(sim)
