@@ -15,6 +15,8 @@ import scipy.stats as stats
 import matplotlib.mlab as mlab
 import sdss_sub_data as sub
 from matplotlib.colors import LinearSegmentedColormap
+from scipy.optimize import curve_fit
+import make_plots
 
 colors = get_colors()
 
@@ -93,6 +95,54 @@ def get_mock_angles(THRESHOLD, NPTS, max_angle=None):
 
 	return costhetas, bal_flags
 
+# Define model function to be used to fit to the data above:
+def gauss(x, *p):
+	
+	'''
+	gaussian function 
+	'''
+
+	A, mu, sigma = p
+
+	return A * np.exp(-(x-mu)**2/(2.*sigma**2))
+
+
+def fit_histogram(ews, max_angle):
+
+	'''
+	get fit parameters for EW for the quasars. This is our best
+	guess at an intrinsic distribution.
+	'''
+
+	# first get random angles just for some quasars
+	NPTS = len(ews)
+
+	if max_angle > 0.0:
+		costhetas, flags = get_mock_angles(0.0, NPTS, max_angle=max_angle)
+	else:
+		costhetas = np.ones(NPTS)
+
+	# intrinsic distribution will be corrected by costhetas
+	intrinsic = costhetas * ews
+	log_intrinsic = np.log10(intrinsic)
+
+	# make a histogram of log EW
+	n, bins = np.histogram(log_intrinsic, normed=True, bins=np.arange(-1,3,0.05))
+	
+	# estimate and error, root N stats
+	n_error = np.sqrt(n)
+
+	# p0 is the initial guess for the fitting coefficients (A, mu and sigma above)
+	p0 = [1., 0., 1.]
+
+	# fit with gaussian
+	bin_centres = 0.5*(bins[1:] + bins[:-1])
+	coeff, var_matrix = curve_fit(gauss, bin_centres, n, p0=p0)
+
+	return coeff, intrinsic
+
+
+
 
 def set_subplot_ticks():
 	'''
@@ -105,6 +155,20 @@ def set_subplot_ticks():
 	gca().set_xticklabels(["0.1","1","10","$10^2$","$10^3$","$10^4$"])
 
 	return 
+
+
+def mock_data_from_gauss(NPTS, *coeff):
+
+	A, loc, scale = coeff 
+
+	return np.random.normal(loc=loc, scale=scale, size=NPTS)
+
+
+
+
+
+
+
 
 
 class selection:
@@ -207,7 +271,7 @@ class simulation:
 					print '------------------'
 
 					# record the values in some arrays
-					self.ks_p_value[i,j] = stats.ks_2samp(self.mock_data[select_mock_bals], ews[select.general*select.mgbal])[1]
+					self.ks_p_value[i,j] = stats.ks_2samp(mock_data[select_mock_bals], ews[select.general*select.mgbal])[1]
 					self.f_bal[i,j] = bal_frac
 
 					# store the standard dev and mean of the dataset
@@ -226,93 +290,87 @@ class simulation:
 		return 0
 
 
+	#def function_to_minimise(A, mu, sigma, )
 
 
-		
 
-def plot_contour(sim):
+	def run_gauss(self, select):
+		'''
+		run the actual simulation, using select as the booleans
+		and data as the data
 
-	'''
-	sim 
-	instance of class simulation 
-	'''
+		populates the f_bal and ks_test arrays
+		'''
+		logbins = False
 
-	cm_use=get_viridis()
-	# below here it's just plotting...
-	figure(figsize=(13,7))
-	subplot(1,2,1)
+		# now iterate over the thresold angles
+		for i, thmin in enumerate(self.thetamin):
+			for j,thmax in enumerate(self.thetamax):
 
-	sim.ks_p_value = np.ma.masked_array(sim.ks_p_value, mask=(sim.ks_p_value == 0) )
-	sim.f_bal = np.ma.masked_array(sim.f_bal, mask=(sim.f_bal == 0) )
+				print i, j
 
-	contourf(sim.thetamax, sim.thetamin, np.log10(sim.ks_p_value), extend='both', levels=np.arange(-20,0,0.5), cmap=cm_use)
-	#contour(thetamax, thetamins, np.log10(ks_test), levels=np.log10(np.array([0.001,0.05,0.32])), c="k")
-	ylabel(r"$\theta_{min}$", fontsize=20)
-	xlabel(r"$\theta_{max}$", fontsize=20)
-	title('''$\log~(p$-value$)$. If the p-value is high, 
-	then we cannot reject the hypothesis that the distributions 
-	of the two samples are the same''', fontsize=14)
+				if thmax > thmin:
+					
+					ews = self.data["ew_o3"][select.general]
+					ew_bals = self.data["ew_o3"][select.general*select.mgbal]
 
-	subplot(1,2,2)
-	contourf(sim.thetamax, sim.thetamin, sim.f_bal, extend='both', levels=np.arange(0,1,0.02), cmap=cm_use)
-	#contour(thetamax, thetamins, f_bal)
-	colorbar()
-	ylabel(r"$\theta_{min}$", fontsize=20)
-	xlabel(r"$\theta_{max}$", fontsize=20)
-	title("$f_{BAL}$", fontsize=20)
+					# fit the histogram yeh
+					print "fitting"
+					coeff, intrinsic = fit_histogram(ews, thmin)
+					print "successful fit"
 
-	subplots_adjust(left=0.1,right=0.97,top=0.80)
-	savefig("contour.png", dpi=200)
+					NPTS =	len(ews)
 
-	return 0
+					# get angles above the threshold generated uniformly on sky
+					# and apply to EW measurements
+					costhetas, mock_bal_flags = get_mock_angles(thmin, NPTS, max_angle=thmax)
+
+					# mock data needs to be divided by emissivity function
+					# mock_data = self.data["ew_o3"][select.general]
+					mock_data = 10.0**mock_data_from_gauss(NPTS, *coeff)
+					mock_data = mock_data / emissivity_function(costhetas)
+
+					# selections based on flags returned from angle sim
+					select_mock_bals = (mock_bal_flags == "b")
+					select_mock_nonbals = (mock_bal_flags == "q")
+
+					# bal fraction- just number of objects!
+					bal_frac = float(np.sum(select_mock_bals)) / float(NPTS)
 
 
-def plot_contour2(sim):
+					'''
+					If the K-S statistic is small or the p-value is high, 
+					then we cannot reject the hypothesis that the distributions 
+					of the two samples are the same.
+					'''
+					print i, j
+					print '------------------'
 
-	'''
-	sim 
-	instance of class simulation 
-	'''
+					# record the values in some arrays
+					self.ks_p_value[i,j] = stats.ks_2samp(mock_data[select_mock_bals], ew_bals)[1]
+					self.f_bal[i,j] = bal_frac
 
-	d_use = sim.data["ew_o3"][select.general*select.mgbal]
+					# store the standard dev and mean of the dataset
+					self.std_dev[i,j] = np.std(mock_data[select_mock_bals])
+					self.mean[i,j] = np.mean(mock_data[select_mock_bals])
 
-	mu = np.mean(d_use)
-	sigma = np.std(d_use)
+					figure()
+					bins = np.arange(-2,3,0.1)
+					ALPHA = 0.3
+					hist(np.log10(ew_bals), normed=True, facecolor=colors[0], alpha=ALPHA, bins=np.arange(-2,3,0.1), label="BAL")
+					hist(np.log10(mock_data[select_mock_bals]), normed=True, facecolor=colors[1], alpha=ALPHA, bins=np.arange(-2,3,0.1), label="Mock BAL")
+					hist(np.log10(intrinsic), normed=True, facecolor=colors[3], alpha=ALPHA, bins=np.arange(-2,3,0.1), label="Intrinsic")
+					hist(np.log10(ews), normed=True, facecolor=colors[4], alpha=ALPHA, bins=np.arange(-2,3,0.1), label="BAL")
+					binc = 0.5*(bins[1:] + bins[:-1])
+					plot(binc, gauss(binc, *coeff), c="r", linewidth=2, label="Intrinsic fit")
+					float_legend()
+					savefig("hist_%i_%i.png" % (thmin, thmax), dpi=100)
+					clf()
 
-	sim.mean = np.ma.masked_array(sim.mean, mask=(sim.mean == 0) )
-	sim.std_dev = np.ma.masked_array(sim.std_dev, mask=(sim.std_dev == 0) )
+					print bal_frac, self.ks_p_value[i,j]
+					print 
 
-	cm_use=get_viridis()
-	# below here it's just plotting...
-	figure(figsize=(13,7))
-	subplot(1,2,1)
-
-	contourf(sim.thetamax, sim.thetamin, sim.mean - mu, extend="max", cmap=cm_use, levels=np.arange(-10,50,1))
-	colorbar()
-
-	CS4 =contour(sim.thetamax, sim.thetamin, sim.mean - mu, colors=('w',), linewidths=(2,),levels=np.arange(-10,60,10))
-	clabel(CS4, fmt='%2i', colors='w', fontsize=14)
-
-	ylabel(r"$\theta_{min}$", fontsize=20)
-	xlabel(r"$\theta_{max}$", fontsize=20)
-	title(r"$\Delta \mu = \mu_{EW,mock} - \mu_{EW,BALs}$", fontsize=20)
-
-	subplot(1,2,2)
-	contourf(sim.thetamax, sim.thetamin, sim.std_dev - sigma, extend="max", cmap=cm_use, levels=np.arange(-10,50,1))
-	colorbar()
-
-	CS4 = contour(sim.thetamax, sim.thetamin, sim.std_dev - sigma,  colors=('w',), linewidths=(2,), levels=np.arange(-10,60,10))
-	#contour(thetamax, thetamins, f_bal)
-	clabel(CS4, fmt='%2i', colors='w', fontsize=14)
-	
-	ylabel(r"$\theta_{min}$", fontsize=20)
-	xlabel(r"$\theta_{max}$", fontsize=20)
-	title(r"$\Delta \sigma = \sigma_{EW,mock} - \sigma_{EW,BALs}$", fontsize=20)
-
-	subplots_adjust(left=0.1,right=0.97,top=0.93)
-	savefig("contour2.png", dpi=200)
-
-	return 0
+		return 0
 
 
 
@@ -335,8 +393,9 @@ if __name__ == "__main__":
 	sim = simulation(thetamin, thetamax, data)
 
 	# run sim
-	sim.run(select)
+	#sim.run(select)
+	sim.run_gauss(select)
 
 	# make the contour plots
-	plot_contour(sim)
-	plot_contour2(sim)
+	make_plots.plot_contour(sim)
+	make_plots.plot_contour2(sim)
