@@ -181,6 +181,7 @@ class selection:
 	def __init__(self, data):
 
 		redshift_lims = (3800.0 / 2800.0 - 1.0, 9200.0 / 5007.0 - 1.0)
+		redshift_lims_b = (3800.0 / 1550.0 - 1.0, 9200.0 / 2800.0 - 1.0)
 
 		self.nonbal = (data["bal_flag"] == 0) 
 		self.mgbal = (data["bal_flag"] == 2)
@@ -188,6 +189,8 @@ class selection:
 		self.has_o3 = (data["ew_o3"] > 0)
 		self.mass = None
 		self.general = self.has_o3 * self.z
+		self.a = (data["z"] > redshift_lims[0]) * (data["z"] < redshift_lims[1])
+		self.b = (data["z"] > redshift_lims_b[0]) * (data["z"] < redshift_lims_b[1])
 
 
 
@@ -373,6 +376,63 @@ class simulation:
 		return 0
 
 
+def make_hist(data, select):
+
+	strings = ["ew_o3", "ew_mg2", "ew_c4", "ew_mg2"]
+	selects = [select.a, select.a, select.b, select.b]
+	logbins = True
+	lims = [(0,150),(0,200),(0,200),(0,200)]
+	labels=[r"[O~\textsc{iii}]~$5007$\AA", r"Mg~\textsc{ii}~$2800$\AA", r"C~\textsc{iv}~$1550$\AA", r"Mg~\textsc{ii}~$2800$\AA"]
+	NORM=True
+	# now make the histogram plot
+	set_pretty()
+	figure(figsize=(20,7))
+
+	for i in range(4):
+		subplot(1,4, i+1)
+		long_ticks()
+		#bins = np.arange(lims[i][0],lims[i][1],binsize[i])
+
+		if logbins: bins = np.arange(-2,4,0.1)
+
+
+		if logbins:
+			ews = np.log10(data[strings[i]])
+		else:
+			ews = ews_to_do[data[strings[i]]]
+	
+
+		hist(ews[selects[i]*select.nonbal],bins=bins, facecolor=colors[0], alpha=0.7, log=True, label="non-BALs", normed=NORM, stacked=True)
+		hist(ews[selects[i]*select.mgbal],bins=bins, facecolor=colors[1], alpha=0.4, log=True, label="BALs", normed=NORM, stacked=True)
+
+		if i == 0: ylabel("Normalised Counts", fontsize=20)
+
+		xlim(0,3)
+		ylim(1e-3,10)
+		ylimits = gca().get_ylim()
+		text(0.4*lims[i][1], 0.6*ylimits[1],labels[i], fontsize=20)
+		title(labels[i], fontsize=24)
+		#ylim(0,0.06)
+		xlabel(r"$\log [W_{\lambda}$ (\AA)]", fontsize=20)
+		#xlim(lims[i][0],lims[i][1])
+
+		text(0.25,4,r"$\mu_{non-BAL} = %.2f$\AA" % np.mean(10.0**ews[selects[i]*select.nonbal]), fontsize=20)
+		text(0.25,2,r"$\mu_{BAL} = %.2f$\AA" % np.mean(10.0**ews[selects[i]*select.mgbal]), fontsize=20)
+
+		if i == 0:
+			text(2,30,"Sample A, %i Mg BALs, %i non-BALs." % ( np.sum(selects[i]*select.mgbal), np.sum(selects[i]*select.nonbal) ) , fontsize=20)
+		if i == 2:
+			text(2,30,"Sample B, %i Mg BALs, %i non-BALs." % ( np.sum(selects[i]*select.mgbal), np.sum(selects[i]*select.nonbal) ) , fontsize=20)
+
+		if i == 0: 
+			float_legend()
+
+
+	subplots_adjust(wspace = 0.15, left= 0.06, right=0.98, top=0.85)
+	savefig("ew_hist_qsos.png", dpi=300)
+
+
+
 
 
 if __name__ == "__main__":
@@ -389,13 +449,23 @@ if __name__ == "__main__":
 	# then we select for BAL or no-BAL
 	select = selection(data)
 
-	# set up sim
-	sim = simulation(thetamin, thetamax, data)
+	mode = sys.argv[1]
 
-	# run sim
-	#sim.run(select)
-	sim.run_gauss(select)
+	if mode == "sim":
 
-	# make the contour plots
-	make_plots.plot_contour(sim)
-	make_plots.plot_contour2(sim)
+		# set up sim
+		sim = simulation(thetamin, thetamax, data)
+
+		# run sim
+		#sim.run(select)
+		sim.run_gauss(select)
+
+		# make the contour plots
+		make_plots.plot_contour(sim)
+		make_plots.plot_contour2(sim)
+
+	elif mode == "hist":
+
+		make_hist(data, select)
+
+

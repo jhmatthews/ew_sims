@@ -13,7 +13,13 @@ from constants import *
 from pretty import *
 import scipy.stats as stats
 import matplotlib.mlab as mlab
+import seaborn as sns
 
+import seaborn.apionly as sns
+
+fig_size = (17,7)
+#sns.set(context="paper", style="dark",rc={'text.usetex': True,'figure.figsize': fig_size, 'font.family': [u'serif'], 'font.serif':[u'Computer Modern'], 'axes.linewidth': 0.7, 'xtick.major.width': 0.7})
+#sns.set_style({"xtick.direction": "in","ytick.direction": "in"})
 
 set_pretty()
 big_tick_labels(18)
@@ -25,18 +31,20 @@ bal_flag, r_flag, ews_o3, ews_mg2, ews_c4 = np.loadtxt("/Users/jmatthews/Documen
 select2 = (bal_flag == 0) 
 select3 = (bal_flag >= 1) 
 
-ews_to_do = [ews_o3, ews_mg2, ews_c4]
+red_lims = [(0.35,0.83),(0.35,0.83),(1.45,2.28),(1.45,2.28)]
+
+ews_to_do = [ews_o3, ews_mg2, ews_c4, ews_mg2]
 n_to_do = len(ews_to_do)
 
 lims = [(0,150),(0,200),(0,200)]
-binsize = [5,5,5]
+binsize = [5,5,5,5]
 labels=[r"[O~\textsc{iii}]~$5007$\AA", r"Mg~\textsc{ii}~$2800$\AA", r"C~\textsc{iv}~$1550$\AA"]
 
 NORM  = True
 THRESHOLDS = [30.0, 70.0]
 logbins = True
 # now make the histogram plot
-figure(figsize=(17,7))
+figure(figsize=(20,7))
 
 # loop over lines / subplots
 for i in range(n_to_do):
@@ -52,24 +60,31 @@ for i in range(n_to_do):
 	
 	#ews = np.log10(ews_to_do[i])
 
+
 	if logbins:
 		ews = np.log10(ews_to_do[i])
 	else:
 		ews = ews_to_do[i]
 
+	select1 = (ews>-3)
+
 	select1 = (ews>0) 
 	select2 = (bal_flag == 0) 
 	select3 = (bal_flag >= 1) 
 
-	hist(ews[select1*select2],bins=bins, facecolor=colors[0], alpha=0.5, log=True, label="non-BALs", normed=NORM, stacked=True)
-	hist(ews[select1*select3],bins=bins, facecolor=colors[1], alpha=0.5, log=True, label="BALs", normed=NORM, stacked=True)
+	hist(ews[select1*select2],bins=bins, facecolor=colors[0], alpha=0.7, log=True, label="non-BALs", normed=NORM, stacked=True)
+	hist(ews[select1*select3],bins=bins, facecolor=colors[1], alpha=0.4, log=True, label="BALs", normed=NORM, stacked=True)
 
 	ylimits = gca().get_ylim()
 	text(0.4*lims[i][1], 0.6*ylimits[1],labels[i], fontsize=24)
 	title(labels[i], fontsize=24)
 	#ylim(0,0.06)
-	xlabel(r"$W_{\lambda}$ (\AA)", fontsize=20)
+	xlabel(r"$\log [W_{\lambda}$ (\AA)]", fontsize=20)
 	#xlim(lims[i][0],lims[i][1])
+
+	text(0.25,4,r"$\mu_{non-BAL} = %.2f$\AA" % np.mean(10.0**ews[select1*select2]), fontsize=20)
+	text(0.25,2,r"$\mu_{BAL} = %.2f$\AA" % np.mean(10.0**ews[select1*select3]), fontsize=20)
+
 	if i == 0: 
 		float_legend()
 
