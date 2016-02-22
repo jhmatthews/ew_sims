@@ -185,6 +185,7 @@ class selection:
 
 		self.nonbal = (data["bal_flag"] == 0) 
 		self.mgbal = (data["bal_flag"] == 2)
+		self.bal = (data["bal_flag"] > 0)
 		self.z = (data["z"] > redshift_lims[0]) * (data["z"] < redshift_lims[1])
 		self.has_o3 = (data["ew_o3"] > 0)
 		self.mass = None
@@ -226,6 +227,7 @@ class simulation:
 		self.thetamax = thetamax
 
 		self.data = data
+
 
 	def run(self, select):
 		'''
@@ -294,6 +296,39 @@ class simulation:
 
 
 	#def function_to_minimise(A, mu, sigma, )
+	def write_sim_to_file(self, fname="simulation.out"):
+
+		f = open(fname, "w")
+
+		f.write("# SIMULATION OUTPUT\n")
+		f.write("# i, j, thmin, thmax, f_bal, mean, std_dev, ks_p_value\n")
+
+		# create an array to write
+		for i, thmin in enumerate(self.thetamin):
+			for j,thmax in enumerate(self.thetamax):
+				f.write("%i %i %.4f %.4f %8.4e %8.4e %8.4e %8.4e\n" % 
+					     (i, j, thmin, thmax, self.f_bal[i,j], self.mean[i,j], self.std_dev[i,j], self.ks_p_value[i,j]) )
+
+		f.close()
+
+
+	def read_from_file(self, fname="simulation.out"):
+
+		f = open(fname, "r")
+
+		for line in f:
+			data = line.split()
+			i = int(data[0])
+			j = int(data[1])
+			self.thetamin[i] = float(data[2])
+			self.thetamax[j] = float(data[3])
+
+			self.f_bal[i,j] = float(data[4])
+			self.mean[i,j] = float(data[5])
+			self.std_dev[i,j] = float(data[6])
+			self.ks_p_value[i,j] = float(data[7])
+
+		f.close()
 
 
 
@@ -376,10 +411,28 @@ class simulation:
 		return 0
 
 
+#def function_to_minimise(A, mu, sigma, )
+def write_sim_to_file(sim, fname="simulation.out"):
+
+	f = open(fname, "w")
+
+	f.write("# SIMULATION OUTPUT\n")
+	f.write("# i, j, thmin, thmax, f_bal, mean, std_dev, ks_p_value\n")
+
+	# create an array to write
+	for i, thmin in enumerate(sim.thetamin):
+		for j,thmax in enumerate(sim.thetamax):
+			f.write("%i %i %.4f %.4f %8.4e %8.4e %8.4e %8.4e\n" % 
+				     (i, j, thmin, thmax, sim.f_bal[i,j], sim.mean[i,j], sim.std_dev[i,j], sim.ks_p_value[i,j]) )
+
+	f.close()
+
+
 def make_hist(data, select):
 
 	strings = ["ew_o3", "ew_mg2", "ew_c4", "ew_mg2"]
 	selects = [select.a, select.a, select.b, select.b]
+	bal_selects = [select.mgbal, select.mgbal, select.bal, select.bal]
 	logbins = True
 	lims = [(0,150),(0,200),(0,200),(0,200)]
 	labels=[r"[O~\textsc{iii}]~$5007$\AA", r"Mg~\textsc{ii}~$2800$\AA", r"C~\textsc{iv}~$1550$\AA", r"Mg~\textsc{ii}~$2800$\AA"]
@@ -403,7 +456,7 @@ def make_hist(data, select):
 	
 
 		hist(ews[selects[i]*select.nonbal],bins=bins, facecolor=colors[0], alpha=0.7, log=True, label="non-BALs", normed=NORM, stacked=True)
-		hist(ews[selects[i]*select.mgbal],bins=bins, facecolor=colors[1], alpha=0.4, log=True, label="BALs", normed=NORM, stacked=True)
+		hist(ews[selects[i]*bal_selects[i]],bins=bins, facecolor=colors[1], alpha=0.4, log=True, label="BALs", normed=NORM, stacked=True)
 
 		if i == 0: ylabel("Normalised Counts", fontsize=20)
 
@@ -417,12 +470,12 @@ def make_hist(data, select):
 		#xlim(lims[i][0],lims[i][1])
 
 		text(0.25,4,r"$\mu_{non-BAL} = %.2f$\AA" % np.mean(10.0**ews[selects[i]*select.nonbal]), fontsize=20)
-		text(0.25,2,r"$\mu_{BAL} = %.2f$\AA" % np.mean(10.0**ews[selects[i]*select.mgbal]), fontsize=20)
+		text(0.25,2,r"$\mu_{BAL} = %.2f$\AA" % np.mean(10.0**ews[selects[i]*bal_selects[i]]), fontsize=20)
 
 		if i == 0:
-			text(2,30,"Sample A, %i Mg BALs, %i non-BALs." % ( np.sum(selects[i]*select.mgbal), np.sum(selects[i]*select.nonbal) ) , fontsize=20)
+			text(2,30,"Sample A, %i Mg BALs, %i non-BALs." % ( np.sum(selects[i]*bal_selects[i]), np.sum(selects[i]*select.nonbal) ) , fontsize=20)
 		if i == 2:
-			text(2,30,"Sample B, %i Mg BALs, %i non-BALs." % ( np.sum(selects[i]*select.mgbal), np.sum(selects[i]*select.nonbal) ) , fontsize=20)
+			text(2,30,"Sample B, %i BALs, %i non-BALs." % ( np.sum(selects[i]*bal_selects[i]), np.sum(selects[i]*select.nonbal) ) , fontsize=20)
 
 		if i == 0: 
 			float_legend()
@@ -457,12 +510,14 @@ if __name__ == "__main__":
 		sim = simulation(thetamin, thetamax, data)
 
 		# run sim
-		#sim.run(select)
-		sim.run_gauss(select)
+		sim.run(select)
+		#sim.run_gauss(select)
 
 		# make the contour plots
 		make_plots.plot_contour(sim)
 		make_plots.plot_contour2(sim)
+
+	#elif mode == "read":
 
 	elif mode == "hist":
 
