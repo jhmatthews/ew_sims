@@ -81,6 +81,7 @@ def get_mock_angles(THRESHOLD, NPTS, max_angle=None):
 			theta = (np.arccos(costheta) * 180.0 / np.pi)
 
 			detected = is_source_detected(costheta)
+			#detected = True
 
 			if (theta > max_angle):
 				detected = False
@@ -102,7 +103,7 @@ def gauss(x, *p):
 	gaussian function 
 	'''
 
-	A, mu, sigma = p
+	mu, sigma = p
 
 	return A * np.exp(-(x-mu)**2/(2.*sigma**2))
 
@@ -143,6 +144,59 @@ def fit_histogram(ews, max_angle):
 
 
 
+def function_to_minimise(params, ew_o_quasars, costhetas):
+
+	mu = params[0]
+	sigma = params[1]
+	sigma = 5.0
+
+	ewstar = np.random.normal(loc=mu, scale=sigma, size=len(costhetas))
+
+	ew_for_test = ewstar / costhetas
+
+	'''
+	If the K-S statistic is small or the p-value is high, 
+	then we cannot reject the hypothesis that the distributions 
+	of the two samples are the same.
+	'''
+
+	'''IMPROVE: is minimising 1/pval Ok?'''
+
+	f_ew_for_test = histogram(ew_for_test, bins=np.arange(0,200,1))[0]
+	f_ewo = histogram(ew_o_quasars, bins=np.arange(0,200,1))[0]
+
+	select = (f_ewo > 5) * (f_ew_for_test > 5)
+
+	df = np.sqrt(f_ewo)
+
+	#chi2 = stats.chisquare(f_ewo, f_ew_for_test)
+
+	chi2 = np.sum( (f_ewo[select] - f_ew_for_test[select])**2 / df[select] )
+
+	return chi2
+
+
+
+def check(ews, costhetas):
+
+	mu = 5.0 + (20.0 * np.random.random(size=10000))
+	sigma = (20.0 * np.random.random(size=10000))
+
+	chi2_min = 1e100
+	params_min = None
+
+	for i, m in enumerate(mu):
+		for j, s in enumerate(sigma):
+			chi2 = function_to_minimise([m,s], ews, costhetas)
+
+			if chi2 < chi2_min:
+				chi2_min = chi2
+				params_min = (m,s)
+				print i, chi2, m, s
+
+	return chi2_min, params_min
+
+
 
 def set_subplot_ticks():
 	'''
@@ -162,10 +216,6 @@ def mock_data_from_gauss(NPTS, *coeff):
 	A, loc, scale = coeff 
 
 	return np.random.normal(loc=loc, scale=scale, size=NPTS)
-
-
-
-
 
 
 
@@ -485,6 +535,68 @@ def make_hist(data, select):
 	savefig("ew_hist_qsos.png", dpi=300)
 
 
+
+def make_2dhist(data, select):
+
+	logbins = True
+	lims = [(0,150),(0,200),(0,200),(0,200)]
+	labels=[r"[O~\textsc{iii}]~$5007$\AA", r"Mg~\textsc{ii}~$2800$\AA", r"C~\textsc{iv}~$1550$\AA", r"Mg~\textsc{ii}~$2800$\AA"]
+	NORM=True
+	# now make the histogram plot
+	set_pretty()
+	figure(figsize=(20,7))
+
+	subplot(211)
+	ews = np.log10(data["ew_c4"])
+	hist(ews[selects[i]*select.nonbal],bins=bins, facecolor=colors[0], alpha=0.7, log=True, label="non-BALs", normed=NORM, stacked=True)
+	hist(ews[selects[i]*bal_selects[i]],bins=bins, facecolor=colors[1], alpha=0.4, log=True, label="BALs", normed=NORM, stacked=True)
+
+
+
+
+
+	for i in range(4):
+		subplot(1,4, i+1)
+		long_ticks()
+		#bins = np.arange(lims[i][0],lims[i][1],binsize[i])
+
+		if logbins: bins = np.arange(-2,4,0.1)
+
+
+		if logbins:
+			ews = np.log10(data[strings[i]])
+		else:
+			ews = ews_to_do[data[strings[i]]]
+	
+
+		hist(ews[selects[i]*select.nonbal],bins=bins, facecolor=colors[0], alpha=0.7, log=True, label="non-BALs", normed=NORM, stacked=True)
+		hist(ews[selects[i]*bal_selects[i]],bins=bins, facecolor=colors[1], alpha=0.4, log=True, label="BALs", normed=NORM, stacked=True)
+
+		if i == 0: ylabel("Normalised Counts", fontsize=20)
+
+		xlim(0,3)
+		ylim(1e-3,10)
+		ylimits = gca().get_ylim()
+		text(0.4*lims[i][1], 0.6*ylimits[1],labels[i], fontsize=20)
+		title(labels[i], fontsize=24)
+		#ylim(0,0.06)
+		xlabel(r"$\log [W_{\lambda}$ (\AA)]", fontsize=20)
+		#xlim(lims[i][0],lims[i][1])
+
+		text(0.25,4,r"$\mu_{non-BAL} = %.2f$\AA" % np.mean(10.0**ews[selects[i]*select.nonbal]), fontsize=20)
+		text(0.25,2,r"$\mu_{BAL} = %.2f$\AA" % np.mean(10.0**ews[selects[i]*bal_selects[i]]), fontsize=20)
+
+		if i == 0:
+			text(2,30,"Sample A, %i Mg BALs, %i non-BALs." % ( np.sum(selects[i]*bal_selects[i]), np.sum(selects[i]*select.nonbal) ) , fontsize=20)
+		if i == 2:
+			text(2,30,"Sample B, %i BALs, %i non-BALs." % ( np.sum(selects[i]*bal_selects[i]), np.sum(selects[i]*select.nonbal) ) , fontsize=20)
+
+		if i == 0: 
+			float_legend()
+
+
+	subplots_adjust(wspace = 0.15, left= 0.06, right=0.98, top=0.85)
+	savefig("ew_hist_qsos.png", dpi=300)
 
 
 
