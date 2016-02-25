@@ -148,7 +148,6 @@ def function_to_minimise(params, ew_o_quasars, costhetas):
 
 	mu = params[0]
 	sigma = params[1]
-	sigma = 5.0
 
 	ewstar = np.random.normal(loc=mu, scale=sigma, size=len(costhetas))
 
@@ -162,16 +161,18 @@ def function_to_minimise(params, ew_o_quasars, costhetas):
 
 	'''IMPROVE: is minimising 1/pval Ok?'''
 
-	f_ew_for_test = histogram(ew_for_test, bins=np.arange(0,200,1))[0]
-	f_ewo = histogram(ew_o_quasars, bins=np.arange(0,200,1))[0]
+	normalisation = float(len(ew_o_quasars)) / float(len(costhetas))
+
+	f_ew_for_test = normalisation * histogram(ew_for_test, bins=np.arange(0,100,1))[0]
+	f_ewo = histogram(ew_o_quasars, bins=np.arange(0,100,1))[0]
 
 	select = (f_ewo > 5) * (f_ew_for_test > 5)
 
-	df = np.sqrt(f_ewo)
+	df2 = f_ewo
 
 	#chi2 = stats.chisquare(f_ewo, f_ew_for_test)
 
-	chi2 = np.sum( (f_ewo[select] - f_ew_for_test[select])**2 / df[select] )
+	chi2 = np.sum( (f_ewo[select] - f_ew_for_test[select])**2 / df2[select] )
 
 	return chi2
 
@@ -179,22 +180,30 @@ def function_to_minimise(params, ew_o_quasars, costhetas):
 
 def check(ews, costhetas):
 
-	mu = 5.0 + (20.0 * np.random.random(size=10000))
-	sigma = (20.0 * np.random.random(size=10000))
+	#mu = 5.0 + (20.0 * np.random.random(size=10000))
+	#sigma = (20.0 * np.random.random(size=10000))
+
+	mu = np.arange(4,9,0.1)
+	sigma = np.arange(3,20,0.1)
+
 
 	chi2_min = 1e100
 	params_min = None
 
+	chi2_array = np.zeros([len(mu), len(sigma)])
+
 	for i, m in enumerate(mu):
 		for j, s in enumerate(sigma):
 			chi2 = function_to_minimise([m,s], ews, costhetas)
+
+			chi2_array[i,j] = chi2
 
 			if chi2 < chi2_min:
 				chi2_min = chi2
 				params_min = (m,s)
 				print i, chi2, m, s
 
-	return chi2_min, params_min
+	return chi2_array, mu, sigma
 
 
 
