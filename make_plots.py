@@ -55,8 +55,11 @@ def bal_histogram(line, thmin, thmax, ew_o, ew_mock, pval, f_bal, bins):
 	n2, bins2, patches2 = hist(ew_mock, normed=NORM, facecolor=colors[1], alpha=0.5, bins=bins, label="EW$_{fit}$")
 	float_legend()
 	ylabel("$N/N_{tot}$", fontsize=20)
-	text(80,150,r"$p_{KS}=%8.4e$" % (pval), fontsize=20)
-	text(80,130,r"$f_{BAL}=%.2f$" % (f_bal), fontsize=20)
+	ylim = gca().get_ylim()
+	text(80,0.6*np.sum(ylim),r"$p_{KS}=%8.4e$" % (pval), fontsize=20)
+	text(80,0.45*np.sum(ylim),r"$f_{BAL}=%.2f$" % (f_bal), fontsize=20)
+	
+
 
 	title(r"BALs, $\theta_{min} = %i, \theta_{max} = %i$" % (thmin, thmax), fontsize=20)
 	xlabel("EW (\AA)", fontsize=20)
@@ -239,8 +242,6 @@ def make_2dhist(data, select):
 	ews = np.log10(data["ew_c4"])
 	hist(ews[selects[i]*select.nonbal],bins=bins, facecolor=colors[0], alpha=0.7, log=True, label="non-BALs", normed=NORM, stacked=True)
 	hist(ews[selects[i]*bal_selects[i]],bins=bins, facecolor=colors[1], alpha=0.4, log=True, label="BALs", normed=NORM, stacked=True)
-
-
 
 
 

@@ -428,8 +428,8 @@ if __name__ == "__main__":
 	thetamin = np.arange(90,0,-5)
 	thetamax = np.arange(90,0,-5)
 
-	#thetamin = [20]
-	#thetamax = [90]
+	#thetamin = [50]
+	#thetamax = [85]
 
 	# get the data
 	data = sub.get_sample("data/catalog.dat")
