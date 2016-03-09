@@ -374,7 +374,7 @@ class simulation:
 
 						make_plots.bal_histogram(self.line_string, thmin, thmax, 
 							                            ews[self.s_bals], mock_data[select_mock_bals],
-							                            self.ks_p_value[i,j], self.f_bal[i,j], self.bins)
+							                            self.mean[i,j], self.f_bal[i,j], self.bins)
 
 
 						print bal_frac, self.ks_p_value[i,j], self.chi2[i,j]
@@ -445,7 +445,7 @@ if __name__ == "__main__":
 	if mode == "sim":
 
 		# set up sim
-		sim = simulation(thetamin, thetamax, data, select, line_string = "ew_c4")
+		sim = simulation(thetamin, thetamax, data, select, line_string = "ew_o3")
 
 		# run sim
 		sim.run(select)

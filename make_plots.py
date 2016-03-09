@@ -44,7 +44,7 @@ def individual_histogram(line, thmin, thmax, ew_o, ew_mock, chi2, bins):
 	return 0
 
 
-def bal_histogram(line, thmin, thmax, ew_o, ew_mock, pval, f_bal, bins):
+def bal_histogram(line, thmin, thmax, ew_o, ew_mock, mu, f_bal, bins):
 
 	colors = get_colors()
 
@@ -56,7 +56,8 @@ def bal_histogram(line, thmin, thmax, ew_o, ew_mock, pval, f_bal, bins):
 	float_legend()
 	ylabel("$N/N_{tot}$", fontsize=20)
 	ylim = gca().get_ylim()
-	text(80,0.6*np.sum(ylim),r"$p_{KS}=%8.4e$" % (pval), fontsize=20)
+	text(80,0.6*np.sum(ylim),r"$\mu=%8.4e$" % (mu), fontsize=20)
+	#text(80,0.6*np.sum(ylim),r"$p_{KS}=%8.4e$" % (pval), fontsize=20)
 	text(80,0.45*np.sum(ylim),r"$f_{BAL}=%.2f$" % (f_bal), fontsize=20)
 	
 
@@ -72,7 +73,7 @@ def bal_histogram(line, thmin, thmax, ew_o, ew_mock, pval, f_bal, bins):
 
 
 
-def plot_contour(sim):
+def twobytwo_contour(sim):
 
 	'''
 	sim 
@@ -81,7 +82,7 @@ def plot_contour(sim):
 
 	cm_use=get_viridis()
 	# below here it's just plotting...
-	figure(figsize=(20,7))
+	figure(figsize=(10,7))
 	subplot(1,3,1)
 
 	sim.ks_p_value = np.ma.masked_array(sim.ks_p_value, mask=(sim.ks_p_value == 0) )
@@ -93,9 +94,60 @@ def plot_contour(sim):
 	colorbar()
 	ylabel(r"$\theta_{min}$", fontsize=20)
 	xlabel(r"$\theta_{max}$", fontsize=20)
-	title('''$\log~(p$-value$)$. If the p-value is high, 
-	then we cannot reject the hypothesis that the distributions 
-	of the two samples are the same''', fontsize=14)
+	#title('''$\log~(p$-value$)$. If the p-value is high, 
+	#then we cannot reject the hypothesis that the distributions 
+	#of the two samples are the same''', fontsize=14)
+
+	subplot(1,3,2)
+	contourf(sim.thetamax, sim.thetamin, sim.f_bal, extend='both', levels=np.arange(0,1,0.02), cmap=cm_use)
+	#contour(thetamax, thetamins, f_bal)
+	colorbar()
+	ylabel(r"$\theta_{min}$", fontsize=20)
+	xlabel(r"$\theta_{max}$", fontsize=20)
+	title("$f_{BAL}$", fontsize=20)
+
+	subplot(1,3,3)
+	contourf(sim.thetamax, sim.thetamin, sim.chi2, 
+		     extend='both', levels=np.arange(0,50,0.1), cmap=cm_use)
+	#contour(thetamax, thetamins, f_bal)
+	colorbar()
+	ylabel(r"$\theta_{min}$", fontsize=20)
+	xlabel(r"$\theta_{max}$", fontsize=20)
+	title(r"$\chi^2 / dof$", fontsize=20)
+
+	subplots_adjust(left=0.1,right=0.97,top=0.80)
+	savefig("contour_%s.png" % sim.line_string, dpi=200)
+
+	return 0
+
+
+
+
+
+def plot_contour(sim):
+
+	'''
+	sim 
+	instance of class simulation 
+	'''
+
+	cm_use=get_viridis()
+	# below here it's just plotting...
+	figure(figsize=(10,7))
+	subplot(1,3,1)
+
+	sim.ks_p_value = np.ma.masked_array(sim.ks_p_value, mask=(sim.ks_p_value == 0) )
+	sim.f_bal = np.ma.masked_array(sim.f_bal, mask=(sim.f_bal == 0) )
+	sim.chi2 = np.ma.masked_array(sim.chi2, mask=(sim.chi2 == 0) )
+
+	contourf(sim.thetamax, sim.thetamin, np.log10(sim.ks_p_value), extend='both', levels=np.arange(-5,0,0.1), cmap=cm_use)
+	#contour(thetamax, thetamins, np.log10(ks_test), levels=np.log10(np.array([0.001,0.05,0.32])), c="k")
+	colorbar()
+	ylabel(r"$\theta_{min}$", fontsize=20)
+	xlabel(r"$\theta_{max}$", fontsize=20)
+	#title('''$\log~(p$-value$)$. If the p-value is high, 
+	#then we cannot reject the hypothesis that the distributions 
+	#of the two samples are the same''', fontsize=14)
 
 	subplot(1,3,2)
 	contourf(sim.thetamax, sim.thetamin, sim.f_bal, extend='both', levels=np.arange(0,1,0.02), cmap=cm_use)
@@ -127,7 +179,7 @@ def plot_contour2(sim):
 	instance of class simulation 
 	'''
 
-	d_use = sim.data[sim.line_string][sim.s_bal]
+	d_use = sim.data[sim.line_string][sim.s_bals]
 
 	mu = np.mean(d_use)
 	sigma = np.std(d_use)
@@ -140,10 +192,10 @@ def plot_contour2(sim):
 	figure(figsize=(13,7))
 	subplot(1,2,1)
 
-	contourf(sim.thetamax, sim.thetamin, sim.mean - mu, extend="max", cmap=cm_use, levels=np.arange(-10,50,1))
+	contourf(sim.thetamax, sim.thetamin, sim.mean - mu, extend="max", cmap=cm_use, levels=np.arange(-50,50,1))
 	colorbar()
 
-	CS4 =contour(sim.thetamax, sim.thetamin, sim.mean - mu, colors=('w',), linewidths=(2,),levels=np.arange(-10,60,10))
+	CS4 =contour(sim.thetamax, sim.thetamin, sim.mean - mu, colors=('w',), linewidths=(2,),levels=np.arange(-50,60,10))
 	clabel(CS4, fmt='%2i', colors='w', fontsize=14)
 
 	ylabel(r"$\theta_{min}$", fontsize=20)
@@ -151,10 +203,10 @@ def plot_contour2(sim):
 	title(r"$\Delta \mu = \mu_{EW,mock} - \mu_{EW,BALs}$", fontsize=20)
 
 	subplot(1,2,2)
-	contourf(sim.thetamax, sim.thetamin, cp - sigma, extend="max", cmap=cm_use, levels=np.arange(-10,50,1))
+	contourf(sim.thetamax, sim.thetamin, sim.std_dev - sigma, extend="max", cmap=cm_use, levels=np.arange(-50,50,1))
 	colorbar()
 
-	CS4 = contour(sim.thetamax, sim.thetamin, sim.std_dev - sigma,  colors=('w',), linewidths=(2,), levels=np.arange(-10,60,10))
+	CS4 = contour(sim.thetamax, sim.thetamin, sim.std_dev - sigma,  colors=('w',), linewidths=(2,), levels=np.arange(-50,60,10))
 	#contour(thetamax, thetamins, f_bal)
 	clabel(CS4, fmt='%2i', colors='w', fontsize=14)
 	
