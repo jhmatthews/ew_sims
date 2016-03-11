@@ -17,7 +17,7 @@ import sdss_sub_data as sub
 from matplotlib.colors import LinearSegmentedColormap
 from scipy.optimize import curve_fit
 
-def individual_histogram(line, thmin, thmax, ew_o, ew_mock, chi2, bins):
+def individual_histogram(sim, thmin, thmax, ew_o, ew_mock, chi2, bins):
 
 	colors = get_colors()
 
@@ -38,13 +38,14 @@ def individual_histogram(line, thmin, thmax, ew_o, ew_mock, chi2, bins):
 	plot(0.5*(bins1[1:] + bins1[:-1]), chi, linewidth=2, c="k")
 	ylabel("$\chi$", fontsize=20)
 	xlabel("EW (\AA)", fontsize=20)
-	savefig("hists_%s/hist_%i_%i_%s.png" % (line,thmin, thmax, line), dpi=300)
+	#savefig("hists_%s/hist_%i_%i_%s.png" % (line,thmin, thmax, line), dpi=300)
+	savefig("examples_%s_%s_%s/hist_%i_%i_%s.png" % (sim.line_string, sim.mode, sim.source, thmin, thmax, sim.line_string), dpi=300)
 	clf()
 
 	return 0
 
 
-def bal_histogram(line, thmin, thmax, ew_o, ew_mock, mu, f_bal, bins):
+def bal_histogram(sim, thmin, thmax, ew_o, ew_mock, mu, f_bal, bins):
 
 	colors = get_colors()
 
@@ -65,7 +66,8 @@ def bal_histogram(line, thmin, thmax, ew_o, ew_mock, mu, f_bal, bins):
 	title(r"BALs, $\theta_{min} = %i, \theta_{max} = %i$" % (thmin, thmax), fontsize=20)
 	xlabel("EW (\AA)", fontsize=20)
 
-	savefig("hists_%s/balhist_%i_%i_%s.png" % (line,thmin, thmax, line), dpi=300)
+	#savefig("hists_%s/balhist_%i_%i_%s.png" % (line,thmin, thmax, line), dpi=300)
+	savefig("examples_%s_%s_%s/balhist_%i_%i_%s.png" % (sim.line_string, sim.mode, sim.source, thmin, thmax, sim.line_string), dpi=300)
 	clf()
 
 	return 0
@@ -83,13 +85,13 @@ def twobytwo_contour(sim):
 	cm_use=get_viridis()
 	# below here it's just plotting...
 	figure(figsize=(10,7))
-	subplot(1,3,1)
+	subplot(2,2,1)
 
 	sim.ks_p_value = np.ma.masked_array(sim.ks_p_value, mask=(sim.ks_p_value == 0) )
 	sim.f_bal = np.ma.masked_array(sim.f_bal, mask=(sim.f_bal == 0) )
 	sim.chi2 = np.ma.masked_array(sim.chi2, mask=(sim.chi2 == 0) )
 
-	contourf(sim.thetamax, sim.thetamin, np.log10(sim.ks_p_value), extend='both', levels=np.arange(-5,0,0.1), cmap=cm_use)
+	contourf(sim.thetamax, sim.thetamin, np.log10(sim.ks_p_value), extend='both', levels=np.arange(-3,0,0.1), cmap=cm_use)
 	#contour(thetamax, thetamins, np.log10(ks_test), levels=np.log10(np.array([0.001,0.05,0.32])), c="k")
 	colorbar()
 	ylabel(r"$\theta_{min}$", fontsize=20)
@@ -98,25 +100,46 @@ def twobytwo_contour(sim):
 	#then we cannot reject the hypothesis that the distributions 
 	#of the two samples are the same''', fontsize=14)
 
-	subplot(1,3,2)
-	contourf(sim.thetamax, sim.thetamin, sim.f_bal, extend='both', levels=np.arange(0,1,0.02), cmap=cm_use)
+	subplot(2,2,2)
+	contourf(sim.thetamax, sim.thetamin, sim.f_bal, extend='both', levels=np.arange(0,0.6,0.02), cmap=cm_use)
 	#contour(thetamax, thetamins, f_bal)
 	colorbar()
 	ylabel(r"$\theta_{min}$", fontsize=20)
 	xlabel(r"$\theta_{max}$", fontsize=20)
 	title("$f_{BAL}$", fontsize=20)
 
-	subplot(1,3,3)
+	subplot(2,2,3)
 	contourf(sim.thetamax, sim.thetamin, sim.chi2, 
-		     extend='both', levels=np.arange(0,50,0.1), cmap=cm_use)
+		     extend='both', levels=np.arange(0,10,0.1), cmap=cm_use)
 	#contour(thetamax, thetamins, f_bal)
 	colorbar()
 	ylabel(r"$\theta_{min}$", fontsize=20)
 	xlabel(r"$\theta_{max}$", fontsize=20)
 	title(r"$\chi^2 / dof$", fontsize=20)
 
-	subplots_adjust(left=0.1,right=0.97,top=0.80)
-	savefig("contour_%s.png" % sim.line_string, dpi=200)
+
+	subplot(2,2,4)
+	d_use = sim.data[sim.line_string][sim.s_bals]
+
+	mu = np.mean(d_use)
+	sigma = np.std(d_use)
+
+	sim.mean = np.ma.masked_array(sim.mean, mask=(sim.mean == 0) )
+	sim.std_dev = np.ma.masked_array(sim.std_dev, mask=(sim.std_dev == 0) )
+
+	contourf(sim.thetamax, sim.thetamin, sim.mean - mu, extend="max", cmap=cm_use, levels=np.arange(-50,50,1))
+	colorbar()
+
+	CS4 =contour(sim.thetamax, sim.thetamin, sim.mean - mu, colors=('w',), linewidths=(2,),levels=np.arange(-50,60,10))
+	clabel(CS4, fmt='%2i', colors='w', fontsize=14)
+
+	ylabel(r"$\theta_{min}$", fontsize=20)
+	xlabel(r"$\theta_{max}$", fontsize=20)
+	title(r"$\Delta \mu = \mu_{EW,mock} - \mu_{EW,BALs}$", fontsize=20)
+
+
+	#subplots_adjust(left=0.1,right=0.97,top=0.80)
+	savefig("twobytwo_%s_%s.png" % (sim.line_string, sim.mode), dpi=200)
 
 	return 0
 
@@ -167,7 +190,7 @@ def plot_contour(sim):
 	title(r"$\chi^2 / dof$", fontsize=20)
 
 	subplots_adjust(left=0.1,right=0.97,top=0.80)
-	savefig("contour_%s.png" % sim.line_string, dpi=200)
+	savefig("contour_%s_%s.png" % (sim.line_string, sim.mode), dpi=200)
 
 	return 0
 
@@ -215,9 +238,66 @@ def plot_contour2(sim):
 	title(r"$\Delta \sigma = \sigma_{EW,mock} - \sigma_{EW,BALs}$", fontsize=20)
 
 	subplots_adjust(left=0.1,right=0.97,top=0.93)
-	savefig("contour2_%s.png" % sim.line_string, dpi=200)
+	savefig("contour2_%s_%s.png" % (sim.line_string, sim.mode), dpi=200)
 
 	return 0
+
+
+def make_hist(data, select):
+
+	selects = [select.a, select.a, select.b, select.b, select.a]
+	bal_selects = [select.mgbal, select.mgbal, select.bal, select.bal, select.bal]
+	logbins = True
+	lims = [(0,150),(0,200),(0,200),(0,200)]
+	labels=[r"[O~\textsc{iii}]~$5007$\AA", r"Mg~\textsc{ii}~$2800$\AA", r"C~\textsc{iv}~$1550$\AA", r"Mg~\textsc{ii}~$2800$\AA"]
+	NORM=True
+	# now make the histogram plot
+	set_pretty()
+	figure(figsize=(20,7))
+
+	for i in range(4):
+		subplot(1,4, i+1)
+		long_ticks()
+		#bins = np.arange(lims[i][0],lims[i][1],binsize[i])
+
+		if logbins: bins = np.arange(-2,4,0.1)
+
+
+		if logbins:
+			ews = np.log10(data[strings[i]])
+		else:
+			ews = ews_to_do[data[strings[i]]]
+	
+
+		hist(ews[selects[i]*select.nonbal],bins=bins, facecolor=colors[0], alpha=0.7, log=True, label="non-BALs", normed=NORM, stacked=True)
+		hist(ews[selects[i]*bal_selects[i]],bins=bins, facecolor=colors[1], alpha=0.4, log=True, label="BALs", normed=NORM, stacked=True)
+
+		if i == 0: ylabel("Normalised Counts", fontsize=20)
+
+		xlim(0,3)
+		ylim(1e-3,10)
+		ylimits = gca().get_ylim()
+		text(0.4*lims[i][1], 0.6*ylimits[1],labels[i], fontsize=20)
+		title(labels[i], fontsize=24)
+		#ylim(0,0.06)
+		xlabel(r"$\log [W_{\lambda}$ (\AA)]", fontsize=20)
+		#xlim(lims[i][0],lims[i][1])
+
+		text(0.25,4,r"$\mu_{non-BAL} = %.2f$\AA" % np.mean(10.0**ews[selects[i]*select.nonbal]), fontsize=20)
+		text(0.25,2,r"$\mu_{BAL} = %.2f$\AA" % np.mean(10.0**ews[selects[i]*bal_selects[i]]), fontsize=20)
+
+		if i == 0:
+			text(2,30,"Sample A, %i Mg BALs, %i non-BALs." % ( np.sum(selects[i]*bal_selects[i]), np.sum(selects[i]*select.nonbal) ) , fontsize=20)
+		if i == 2:
+			text(2,30,"Sample B, %i BALs, %i non-BALs." % ( np.sum(selects[i]*bal_selects[i]), np.sum(selects[i]*select.nonbal) ) , fontsize=20)
+
+		if i == 0: 
+			float_legend()
+
+
+	subplots_adjust(wspace = 0.15, left= 0.06, right=0.98, top=0.85)
+	savefig("ew_hist_qsos.png", dpi=300)
+
 
 
 
@@ -351,3 +431,129 @@ def set_subplot_ticks():
 	gca().set_xticklabels(["0.1","1","10","$10^2$","$10^3$","$10^4$"])
 
 	return
+
+def fourbytwo(sim, mode="minmax"):
+
+	'''
+	sim 
+	instance of class simulation 
+	'''
+
+	cm_use=get_viridis()
+	# below here it's just plotting...
+	figure(figsize=(10,12))
+	subplot(4,2,1)
+
+	sim.ks_p_value = np.ma.masked_array(sim.ks_p_value, mask=(sim.ks_p_value == 0) )
+	sim.f_bal = np.ma.masked_array(sim.f_bal, mask=(sim.f_bal == 0) )
+	sim.chi2 = np.ma.masked_array(sim.chi2, mask=(sim.chi2 == 0) )
+	sim.mu = np.ma.masked_array(sim.mu, mask=(sim.mu == 0) )
+	sim.sigma = np.ma.masked_array(sim.sigma, mask=(sim.sigma == 0) )
+	sim.mean = np.ma.masked_array(sim.mean, mask=(sim.mean == 0) )
+	sim.std_dev = np.ma.masked_array(sim.std_dev, mask=(sim.std_dev == 0) )
+
+	# if mode == "minmax":
+	# 	x = thetamin 
+	# 	y = thetamax
+
+	contourf(sim.thetamax, sim.thetamin, np.log10(sim.ks_p_value), extend='both', levels=np.arange(-3,0,0.1), cmap=cm_use)
+	colorbar()
+
+	CS4 = contour(sim.thetamax, sim.thetamin, sim.ks_p_value, levels=[0.1,0.05])
+	clabel(CS4, fmt='%.2f', colors='w', fontsize=14)
+	#contour(thetamax, thetamins, np.log10(ks_test), levels=np.log10(np.array([0.001,0.05,0.32])), c="k")
+	ylabel(r"$\theta_{min}$", fontsize=20)
+	xlabel(r"$\theta_{max}$", fontsize=20)
+	text(30,70,r'$\log~(p_{KS}$-value$)$', fontsize=18)
+	gca().set_xticklabels([])
+
+	subplot(4,2,2)
+	contourf(sim.thetamax, sim.thetamin, sim.f_bal, extend='both', levels=np.arange(0,0.6,0.02), cmap=cm_use)
+	#contour(thetamax, thetamins, f_bal)
+	colorbar()
+	ylabel(r"$\theta_{min}$", fontsize=20)
+	xlabel(r"$\theta_{max}$", fontsize=20)
+	text(30,70,"$f_{BAL}$", fontsize=20)
+	gca().set_xticklabels([])
+
+	subplot(4,2,3)
+	contourf(sim.thetamax, sim.thetamin, sim.chi2, 
+		     extend='both', levels=np.arange(0,30,0.1), cmap=cm_use)
+	#contour(thetamax, thetamins, f_bal)
+	colorbar()
+	ylabel(r"$\theta_{min}$", fontsize=20)
+	xlabel(r"$\theta_{max}$", fontsize=20)
+	text(30,70,r"$\chi^2 / dof$", fontsize=20)
+	gca().set_xticklabels([])
+
+	subplot(4,2,4)
+
+	contourf(sim.thetamax, sim.thetamin, sim.mean, extend="max", cmap=cm_use, levels=np.arange(0,100,1))
+	colorbar()
+
+	ylabel(r"$\theta_{min}$", fontsize=20)
+	xlabel(r"$\theta_{max}$", fontsize=20)
+	text(10,70,r"$\mu_{EW,mock}$", fontsize=20)
+	gca().set_xticklabels([])
+
+
+	subplot(4,2,5)
+	d_use = sim.data[sim.line_string][sim.s_bals]
+
+	mu = np.mean(d_use)
+	sigma = np.std(d_use)
+
+	contourf(sim.thetamax, sim.thetamin, sim.mean - mu, extend="max", cmap=cm_use, levels=np.arange(-50,50,1))
+	colorbar()
+
+	CS4 =contour(sim.thetamax, sim.thetamin, sim.mean - mu, colors=('w',), linewidths=(2,),levels=np.arange(-50,60,10))
+	clabel(CS4, fmt='%2i', colors='w', fontsize=14)
+
+	ylabel(r"$\theta_{min}$", fontsize=20)
+	xlabel(r"$\theta_{max}$", fontsize=20)
+	text(10,70,r"$\mu_{EW,mock} - \mu_{EW,BALs}$", fontsize=15)
+	gca().set_xticklabels([])
+
+	subplot(4,2,6)
+	d_use = sim.data[sim.line_string][sim.s_nonbals]
+
+	mu = np.mean(d_use)
+	sigma = np.std(d_use)
+
+	sim.mean = np.ma.masked_array(sim.mean, mask=(sim.mean == 0) )
+	sim.std_dev = np.ma.masked_array(sim.std_dev, mask=(sim.std_dev == 0) )
+
+	contourf(sim.thetamax, sim.thetamin, sim.mean - mu, extend="max", cmap=cm_use, levels=np.arange(-50,50,1))
+	colorbar()
+
+	CS4 =contour(sim.thetamax, sim.thetamin, sim.mean - mu, colors=('w',), linewidths=(2,),levels=np.arange(-50,60,10))
+	clabel(CS4, fmt='%2i', colors='w', fontsize=14)
+
+	ylabel(r"$\theta_{min}$", fontsize=20)
+	xlabel(r"$\theta_{max}$", fontsize=20)
+	text(10,70,r"$\mu_{EW,mock} - \mu_{EW,non-BALs}$", fontsize=15)
+	gca().set_xticklabels([])
+
+
+
+	subplot(4,2,7)
+	contourf(sim.thetamax, sim.thetamin, sim.mu, extend="max", cmap=cm_use, levels=np.arange(0,20,0.4))
+	colorbar()
+
+	ylabel(r"$\theta_{min}$", fontsize=20)
+	xlabel(r"$\theta_{max}$", fontsize=20)
+	text(30,70,r"$\mu^*$", fontsize=20)
+
+	subplot(4,2,8)
+	contourf(sim.thetamax, sim.thetamin, sim.sigma, extend="max", cmap=cm_use, levels=np.arange(0,10,0.4))
+	colorbar()
+
+	ylabel(r"$\theta_{min}$", fontsize=20)
+	xlabel(r"$\theta_{max}$", fontsize=20)
+	text(30,70,r"$\sigma^*$", fontsize=20)
+
+
+	subplots_adjust(left=0.1,right=0.97,top=0.97, bottom=0.06, wspace=0.1, hspace=0.02)
+	savefig("four_%s_%s_%s.png" % (sim.line_string, sim.mode, sim.source), dpi=200)
+
+	return 0

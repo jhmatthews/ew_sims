@@ -9,7 +9,7 @@ from constants import *
 from pretty import *
 import scipy.stats as stats
 import matplotlib.mlab as mlab
-import sdss_sub_data as sub
+import sdss_sub_data2 as sub
 from matplotlib.colors import LinearSegmentedColormap
 from scipy.optimize import curve_fit
 import make_plots
@@ -95,6 +95,62 @@ def get_mock_angles(THRESHOLD, NPTS, max_angle=None):
 			bal_flags[j] = "q"
 
 	return costhetas, bal_flags
+
+
+def get_qso_angles(NPTS, thmin, thmax):
+	'''
+	generate angles according to solid angle and 
+	apply selection effect 
+
+	return flags of whether bal or not
+	'''
+
+	costhetas = np.zeros(NPTS)
+
+
+	for j in range(NPTS):
+
+		detected = False
+
+		while not detected:
+
+			costheta = np.random.random()
+			theta = (np.arccos(costheta) * 180.0 / np.pi)
+
+			#detected = is_source_detected(costheta)
+			detected = True
+
+			if (theta > thmin) and (theta < thmax):
+				detected = False
+
+
+		costhetas[j] = costheta
+
+	return costhetas
+
+
+
+
+
+
+def get_bal_flags(angles, thmin, thmax):
+
+	bal_flags = np.empty(len(angles), dtype="string")
+
+	for i, a in enumerate(angles):
+
+		theta = (np.arccos(a) * 180.0 / np.pi) 
+
+		if theta > thmin and theta < thmax:
+			bal_flags[i] = "b"
+		else:
+			bal_flags[i] = "q"
+
+	return bal_flags
+
+
+
+
 
 
 
@@ -192,19 +248,27 @@ class selection:
 	selection of subsamples in the SDSS data 
 	'''
 
-	def __init__(self, data):
+	def __init__(self, data, hst_map=None):
 
 		redshift_lims = (3800.0 / 2800.0 - 1.0, 9200.0 / 5007.0 - 1.0)
 		redshift_lims_b = (3800.0 / 1400.0 - 1.0, 9200.0 / 1700.0 - 1.0)
 
 		self.nonbal = (data["bal_flag"] == 0) 
 		self.mgbal = (data["bal_flag"] == 2)
-		self.bal = (data["bal_flag"] > 0)
+		
+		if hst_map == None:
+			self.bal = (data["bal_flag"] > 0)
+		else:
+			self.bal = np.zeros(len(data["bal_flag"]))
+			self.bal[hst_map] = 1
+			self.bal = self.bal.astype(bool)
+
+
 		self.z = (data["z"] > redshift_lims[0]) * (data["z"] < redshift_lims[1])
 		self.has_o3 = (data["ew_o3"] > 0)
 		self.mass = None
 		self.general = self.has_o3 * self.z
-		self.a = (data["z"] > redshift_lims[0]) * (data["z"] < redshift_lims[1])
+		self.a = (data["z"] > redshift_lims[0]) * (data["z"] < redshift_lims[1]) * self.has_o3
 		self.b = (data["z"] > redshift_lims_b[0]) * (data["z"] < redshift_lims_b[1]) * (data["ew_c4"] > 0)
 
 
@@ -217,7 +281,7 @@ class simulation:
 	to the data. Also allows one to run the sim.
 	'''
 
-	def __init__(self, thetamin, thetamax, data, select, line_string = "ew_o3"):
+	def __init__(self, thetamin, thetamax, data, select, line_string = "ew_o3", mode="max", source="sdss", saves=None):
 
 		'''
 		thetamin 	array-like
@@ -245,9 +309,16 @@ class simulation:
 		self.data = data
 		self.line_string = line_string		# the line we are looking at
 		self.bins = np.arange(0,150,2)		# bins to use
+		self.mode = mode
+		self.source = source
+		self.saves = saves
 
 		if line_string == "ew_o3":	# use normal
-			self.s_bals = select.general * select.mgbal 
+			if source == "sdss":
+				self.s_bals = select.general * select.mgbal 
+			elif source == "hst":
+				self.s_bals = select.general * select.bal
+
 			self.s_nonbals =  select.general * select.nonbal 
 			self.distribution = np.random.normal
 
@@ -255,6 +326,8 @@ class simulation:
 			self.s_bals = select.b * select.bal 
 			self.s_nonbals = select.b * select.nonbal 
 			self.distribution = np.random.lognormal
+
+		os.system("mkdir examples_%s_%s_%s" % (self.line_string, self.mode, self.source) )
 
 
 	def get_bounds(self):
@@ -282,6 +355,15 @@ class simulation:
 
 		logbins = False
 
+		ew_obs = self.data[self.line_string][self.s_nonbals]
+
+		NPTS =	len(ew_obs)
+
+		if self.mode == "nomax":
+			costhetas, dummy = get_mock_angles(0.0, NPTS, max_angle=90.0)
+
+		output_file = open("simulation_%s_%s_%s.out" % (self.line_string, self.mode, self.source), "w")
+
 		# now iterate over the thresold angles
 		for i, thmin in enumerate(self.thetamin):
 			for j,thmax in enumerate(self.thetamax):
@@ -292,18 +374,15 @@ class simulation:
 
 					valError = False
 
-					#ew_obs = self.data[self.line_string][select.general*select.nonbal]
-					# use sample b for the moment
-					ew_obs = self.data[self.line_string][self.s_nonbals]
-
-					NPTS =	len(ew_obs)
-
+					if self.mode == "max":
 					# get angles above the threshold generated uniformly on sky
 					# and apply to EW measurements
-					costhetas_qsos, dummy = get_mock_angles(0.0, NPTS, max_angle=thmin)
+						costhetas_qsos, dummy = get_mock_angles(0.0, NPTS, max_angle=thmin)
+						costhetas, mock_bal_flags = get_mock_angles(thmin, NPTS, max_angle=thmax)
 
-
-					costhetas, mock_bal_flags = get_mock_angles(thmin, NPTS, max_angle=thmax)
+					elif self.mode == "nomax":
+						costhetas_qsos = get_qso_angles(NPTS, thmin, thmax)
+						mock_bal_flags = get_bal_flags(costhetas, thmin, thmax)
 
 					# do a minimization to get mu and sigma
 					# for the 'intrinsic' distribution
@@ -367,19 +446,29 @@ class simulation:
 						ew1 = ews[self.s_nonbals]
 						ew2 = self.distribution(mu, sig, size = NPTS) / costhetas_qsos
 
-						# make some histograms 
-						make_plots.individual_histogram(self.line_string, thmin, thmax, 
-							                            ew1, ew2,
-							                            self.chi2[i,j], self.bins)
+						if self.saves != None:
+							for k in range(len(self.saves)):
+								if thmin == self.saves[k][0] and thmax == self.saves[k][1]:
+									# make some histograms 
+									make_plots.individual_histogram(self, thmin, thmax, 
+									                            ew1, ew2,
+									                            self.chi2[i,j], self.bins)
 
-						make_plots.bal_histogram(self.line_string, thmin, thmax, 
-							                            ews[self.s_bals], mock_data[select_mock_bals],
-							                            self.mean[i,j], self.f_bal[i,j], self.bins)
+									make_plots.bal_histogram(self, thmin, thmax, 
+									                            ews[self.s_bals], mock_data[select_mock_bals],
+									                            self.mean[i,j], self.f_bal[i,j], self.bins)
 
 
 						print bal_frac, self.ks_p_value[i,j], self.chi2[i,j]
+
+						output_file.write("%i %i %.4f %.4f %8.4e %8.4e %8.4e %8.4e %8.4e %8.4e %8.4e\n" % 
+				     			(i, j, thmin, thmax, self.f_bal[i,j], self.mean[i,j], 
+			          			self.std_dev[i,j], self.ks_p_value[i,j], self.mu[i,j], self.sigma[i,j],
+			          			self.chi2[i,j]) )
+						
 						print 
 
+		output_file.close()
 		return 0
 
 
@@ -398,8 +487,13 @@ class simulation:
 			self.mean[i,j] = float(data[5])
 			self.std_dev[i,j] = float(data[6])
 			self.ks_p_value[i,j] = float(data[7])
+			self.mu[i,j] = float(data[8])
+			self.sigma[i,j] = float(data[9])
+			self.chi2[i,j] = float(data[10])
 
 		f.close()
+
+		return 0
 
 
 
@@ -425,8 +519,8 @@ def write_sim_to_file(sim, fname="simulation.out"):
 if __name__ == "__main__":
 
 	# define angles to run sim over
-	thetamin = np.arange(90,0,-5)
-	thetamax = np.arange(90,0,-5)
+	thetamin = np.arange(90,-1,-1)
+	thetamax = np.arange(90,-1,-1)
 
 	#thetamin = [50]
 	#thetamax = [85]
@@ -437,22 +531,80 @@ if __name__ == "__main__":
 	# selection criteria
 	# we need to be at a certain redshift and have O3 emission
 	# then we select for BAL or no-BAL
-	select = selection(data)
+	
 	set_pretty()
 
 	mode = sys.argv[1]
 
-	if mode == "sim":
+	source = sys.argv[2]
+
+	LINE = "ew_o3"
+
+	SAVES = [(20,40), (50,75), (30,80)]
+
+	if source == "hst":
+
+		# read the SHT COS catalog
+		d_hst = sub.get_hst("data/hst_catalog.dat")
+
+		# find sources which match between hst and SDSS
+		matches, hst_matches, map_for_sdss, map_for_hst = sub.get_sdss_hst_matches(data, d_hst)
+		
+		# names of HST sources
+		hst_names = np.loadtxt("data/hst_catalog.dat", usecols=(1,), unpack=True, dtype="string")
+
+		# names of HST sources which match with SDSS
+		hst_names_matches = hst_names[hst_matches]
+
+		# names of BAL HST sources
+		bal_names = np.loadtxt("HST/BALs", dtype="string")
+		bal_flags = np.zeros(len(hst_names_matches))
+
+		# find where the BALs are in HST
+		for i, f in enumerate(hst_names_matches):
+			select_bal_names = (f == bal_names)
+			if np.sum(select_bal_names == 1): 
+				bal_flags[i] = 1
+
+		# turn the MAP into a flag of where BALs are in SDSS
+		bal_use_flags = map_for_hst[bal_flags.astype(bool)]
+
+		# pass this information to the selection class
+		select = selection(data, hst_map = bal_use_flags)
+
+	else:
+		select = selection(data)
+
+
+	if mode == "max":
 
 		# set up sim
-		sim = simulation(thetamin, thetamax, data, select, line_string = "ew_o3")
+		sim = simulation(thetamin, thetamax, data, select, line_string = LINE, mode=mode, source=source, saves = SAVES)
+
+		# run sim
+		sim.run(select)
+		#sim.run_gauss(select)
+
+		write_sim_to_file(sim, fname="simulation_%s_%s_%s.out" % (LINE, mode, source))
+
+		# make the contour plots
+		make_plots.plot_contour(sim)
+		make_plots.fourbytwo(sim)
+		#make_plots.plot_contour2(sim)
+
+	if mode == "nomax":
+
+		# set up sim
+		sim = simulation(thetamin, thetamax, data, select, line_string = LINE, mode=mode, source=source, saves = SAVES)
 
 		# run sim
 		sim.run(select)
 		#sim.run_gauss(select)
 
 		# make the contour plots
-		make_plots.plot_contour(sim)
+		#make_plots.plot_contour(sim)
+		write_sim_to_file(sim, fname="simulation_%s_%s_%s.out" % (LINE, mode, source))
+		make_plots.fourbytwo(sim)
 		#make_plots.plot_contour2(sim)
 
 	#elif mode == "read":
@@ -461,8 +613,8 @@ if __name__ == "__main__":
 
 		make_plots.make_hist(data, select)
 
-		mixedCase
-		make_plots
+		#mixedCase
+		#make_plots
 
 
 
