@@ -11,17 +11,18 @@ import numpy as np
 column_names = np.array(["z","Lbol", "bal_flag", "radio_flag", 
 "L5100", "L3000", "L1350", "l_o3", 
 "ew_o3", "l_mg2", "ew_mg2", 
-"l_c4", "ew_c4", "mbh_hbeta", "mbh_mg2", "mbh", "edd_frac","special_flag", "ra", "dec", "rflux"])
+"l_c4", "ew_c4", "mbh_hbeta", "mbh_mg2", "mbh", "edd_frac","special_flag", "ra", "dec", "rflux","ew_fe_ha","ew_fe_hb", "ew_hb", "fwhm_hb"])
 
 
 label_columns = np.array(["$z$","$L_{bol}$", "bal flag", "radio flag", 
 "$L_{5100}$", "$L_{3000}$", "$L_{1350}$", r"L[O~\textsc{iii}]", 
 r"EW[O~\textsc{iii}]", r"$L$[Mg~\textsc{ii}]", r"EW[Mg~\textsc{ii}]", 
 r"$L$[C~\textsc{iv}]", r"EW[C~\textsc{iv}]", r"$M_{BH}(H\beta)$", r"$M_{BH}({\rm Mg~textsc{ii}})$",
-"$M_{BH}$","$L/L_{edd}$","special flag", "RA", "Dec", "rflux"])
+"$M_{BH}$","$L/L_{edd}$","special flag", "RA", "Dec", "rflux",r"EW[Fe~\textsc{ii}]",r"EW[Fe~\textsc{ii}]"
+, r"FWHM[H$\beta$]", r"EW[H$\beta$]"])
 
 
-column_map = np.array([3, 11, 13, 14, 18, 20, 22, 72, 74, 85, 87, 105, 107, 126, 130, 138, 140, 141, 1, 2, 15])
+column_map = np.array([3, 11, 13, 14, 18, 20, 22, 72, 74, 85, 87, 105, 107, 126, 130, 138, 140, 141, 1, 2, 15, 48, 76, 59, 57])
 column_map_with_errors = np.zeros(2*len(column_map), dtype=int)
 for i in range(0,len(column_map_with_errors),2):
 

@@ -308,26 +308,10 @@ for i, f in enumerate(folder_matches):
 
 				plot = False
 
-
-
-	# bal_catalog.write("%s %.5f %i %i %i %8.10e %8.10e %8.10e %8.10e %8.10e\n" % 
-	# 	              (folder_matches, z, 
-	# 	               bal_flags[i, 0], bal_flags[i, 1], bal_flags[i, 2], 
-	# 	               BIs[i, 0], BIs[i, 1], BIs[i, 2], 
-	# 	               d_hst["ra"][hst_matches][i], d_hst["dec"][hst_matches][i]) )
-
 	select_bal_names = (f == bal_names)
 
 	if np.sum(select_bal_names == 1):
 		print f
-
-		# bal_catalog.write("%s %.5f %i %8.10e  %8.10e %8.10e\n" % 
-		# 	              (f, z, 
-		# 	               bal_flags[i, 0],  
-		# 	               BIs[i, 0], 
-		# 	               d_hst["ra"][hst_matches][i], d_hst["dec"][hst_matches][i]) )
-		bal_catalog.write("%s %.5f %8.10e %8.10e\n" % 
-			              (f, z, d_hst["ra"][hst_matches][i], d_hst["dec"][hst_matches][i]))
 
 		bal_flags[i] = 1
 
@@ -347,7 +331,7 @@ from pylab import *
 plot_flags = matches
 
 with_c4_plot_flags = map_for_hst[c4_flags.astype(bool)]
-
+bal_plot_flags = map_for_hst[bal_flags.astype(bool)]
 
 
 print match_with_coadd

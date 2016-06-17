@@ -9,7 +9,7 @@ from constants import *
 from pretty import *
 import scipy.stats as stats
 import matplotlib.mlab as mlab
-import sdss_sub_data2 as sub
+import sdss_sub_data as sub
 from matplotlib.colors import LinearSegmentedColormap
 from scipy.optimize import curve_fit
 import make_plots
@@ -52,9 +52,11 @@ def is_source_detected(costheta):
 
 	# work out if above our detection limit which is abritrary at the moment
 	d_detect = get_dist(1.0) * PARSEC
-	detection_limit = 1e45 / (4.0*np.pi*d*d)
+	detection_limit = 1e44 / (4.0*np.pi*d*d)
 
-	return True
+	detected = (flux > detection_limit)
+
+	return detected
 
 
 def get_mock_angles(THRESHOLD, NPTS, max_angle=None):
@@ -85,6 +87,8 @@ def get_mock_angles(THRESHOLD, NPTS, max_angle=None):
 
 			if (theta > max_angle):
 				detected = False
+
+			#detected = True
 
 
 		costhetas[j] = costheta
@@ -128,11 +132,6 @@ def get_qso_angles(NPTS, thmin, thmax):
 
 	return costhetas
 
-
-
-
-
-
 def get_bal_flags(angles, thmin, thmax):
 
 	bal_flags = np.empty(len(angles), dtype="string")
@@ -147,12 +146,6 @@ def get_bal_flags(angles, thmin, thmax):
 			bal_flags[i] = "q"
 
 	return bal_flags
-
-
-
-
-
-
 
 def function_to_minimize(params, ew_o_quasars, costhetas, distribution, bins):
 
@@ -198,18 +191,20 @@ def function_to_minimize(params, ew_o_quasars, costhetas, distribution, bins):
 	f_ewo = histogram(ew_o_quasars, bins=bins)[0]
 
 	# chi2 only really valid for counts > ~ 5, so mask others
-	select = (f_ewo > 5) * (f_ew_for_test > 5)
+	select = (f_ewo > 0) * (f_ew_for_test > 0)
 
 	# is this correct?
 	# df2 = f_ewo + f_ew_for_test
 	df2 = f_ewo
 
 	#chi2 = stats.chisquare(f_ewo, f_ew_for_test)
+	chi2_array = (f_ewo[select] - f_ew_for_test[select])**2
+	chi2_array /= df2[select]
 
-	chi2 = np.sum( (f_ewo[select] - f_ew_for_test[select])**2 / df2[select] )
+	chi2 = np.sum( chi2_array )
 
 	# return the reduced chi squared
-	return chi2 / float(len(f_ewo[select]))
+	return chi2 / (float(len(f_ewo[select]))-3)
 
 
 
@@ -251,7 +246,7 @@ class selection:
 	def __init__(self, data, hst_map=None):
 
 		redshift_lims = (3800.0 / 2800.0 - 1.0, 9200.0 / 5007.0 - 1.0)
-		redshift_lims_b = (3800.0 / 1400.0 - 1.0, 9200.0 / 1700.0 - 1.0)
+		redshift_lims_b = (3800.0 / 1550.0 - 1.0, 9200.0 / 2800.0 - 1.0)
 
 		self.nonbal = (data["bal_flag"] == 0) 
 		self.mgbal = (data["bal_flag"] == 2)
@@ -263,7 +258,8 @@ class selection:
 			self.bal[hst_map] = 1
 			self.bal = self.bal.astype(bool)
 
-
+		self.core = (data["radio_flag"] == 1)
+		self.lobe = (data["radio_flag"] == 2)
 		self.z = (data["z"] > redshift_lims[0]) * (data["z"] < redshift_lims[1])
 		self.has_o3 = (data["ew_o3"] > 0)
 		self.mass = None
@@ -271,6 +267,10 @@ class selection:
 		self.a = (data["z"] > redshift_lims[0]) * (data["z"] < redshift_lims[1]) * self.has_o3
 		self.b = (data["z"] > redshift_lims_b[0]) * (data["z"] < redshift_lims_b[1]) * (data["ew_c4"] > 0)
 
+		dd = get_dist(data["z"])
+
+		abs_mag = data["app"] + 5 - (5.0 * np.log10(dd))
+		self.R11 = (data["z"] > 0.01) * (data["z"] < 0.8) * (data["app"] < 19.1) * (abs_mag < 22.1) * (data["SNR"] > 5)
 
 
 class simulation:
@@ -298,6 +298,7 @@ class simulation:
 
 		self.f_bal = np.zeros(shape)		# bal frac
 		self.mean = np.zeros(shape)			# mean of mock bal data
+		self.mean_qsos = np.zeros(shape)	# mean of mock nonbal data
 		self.std_dev = np.zeros(shape)		# std dev of mock bal data
 		self.ks = np.zeros(shape)			# ks test statistic for bals
 		self.ks_p_value = np.zeros(shape)	# ks p value for bals
@@ -339,7 +340,7 @@ class simulation:
 		if self.distribution == np.random.normal:
 			return ((1,50),(1,50)), [5,10]
 		elif self.distribution == np.random.lognormal:
-			return ((1,5),(1,5)), [3,0.5]
+			return ((-1,50),(-1,50)), [1,1]
 
 
 	def run(self, select):
@@ -362,7 +363,8 @@ class simulation:
 		if self.mode == "nomax":
 			costhetas, dummy = get_mock_angles(0.0, NPTS, max_angle=90.0)
 
-		output_file = open("simulation_%s_%s_%s.out" % (self.line_string, self.mode, self.source), "w")
+		# place to write the simulation output
+		output_file = open("FO_simulation_%s_%s_%s.out" % (self.line_string, self.mode, self.source), "w")
 
 		# now iterate over the thresold angles
 		for i, thmin in enumerate(self.thetamin):
@@ -370,7 +372,9 @@ class simulation:
 
 				print i, j
 
-				if thmax > thmin:
+				diff = thmax - thmin
+
+				if diff >= 4.0:		# minimum opening angle of 4 degrees
 
 					valError = False
 
@@ -380,33 +384,55 @@ class simulation:
 						costhetas_qsos, dummy = get_mock_angles(0.0, NPTS, max_angle=thmin)
 						costhetas, mock_bal_flags = get_mock_angles(thmin, NPTS, max_angle=thmax)
 
+					elif self.mode == "faceon":
+						costhetas, mock_bal_flags = get_mock_angles(thmin, NPTS, max_angle=thmax)
+
 					elif self.mode == "nomax":
 						costhetas_qsos = get_qso_angles(NPTS, thmin, thmax)
 						mock_bal_flags = get_bal_flags(costhetas, thmin, thmax)
 
+
 					# do a minimization to get mu and sigma
 					# for the 'intrinsic' distribution
-
-					try:
-						bounds, guess = self.get_bounds()
-						minimizeObj = opt.minimize(function_to_minimize, guess,
+					# only do this if the mode is not "faceon"
+					if self.mode != "faceon":
+						try:
+							bounds, guess = self.get_bounds()
+							minimizeObj = opt.minimize(function_to_minimize, guess,
                                                bounds = bounds, method="Powell",
 					                           args = (ew_obs, costhetas_qsos, self.distribution, self.bins))
-					except ValueError:
-						print "Value Error!"
-						valError = True
+						except ValueError:
+							print "Value Error!"
+							valError = True
 
-					# if either the mu or sigma returned was zero then we have a problem...
-					if any(minimizeObj.x) < 0:	
-						valError = True
+						# if either the mu or sigma returned was zero then we have a problem...
+						if any(minimizeObj.x) <= 0:	
+							valError = True
+
+
 
 					if valError == False:
-						# copy some attributes from minimizeObj 
-						self.chi2[i,j] = minimizeObj.fun
-						mu, sig = minimizeObj.x
+
+						# get the data that we use
+						#ews = self.data[self.line_string]
+						ews = ew_obs
+
+						if self.mode != "faceon":
+							# copy some attributes from minimizeObj 
+							self.chi2[i,j] = minimizeObj.fun
+							mu, sig = minimizeObj.x
+
+							# mock data needs to be divided by emissivity function
+							mock_data = self.distribution(mu, sig, size = NPTS)
+						
+						else:
+							mock_data = ews
+							self.chi2[i,j] = -999		 # dummy value
+							mu, sig = -999,-999
+
+						print len(mock_data), NPTS
 
 						# mock data needs to be divided by emissivity function
-						mock_data = self.distribution(mu, sig, size = NPTS)
 						mock_data = mock_data / emissivity_function(costhetas)
 
 						# selections based on flags returned from angle sim
@@ -417,6 +443,7 @@ class simulation:
 						bal_frac = float(np.sum(select_mock_bals)) / float(NPTS)
 
 						ews = self.data[self.line_string]
+						
 						if logbins: 
 							mock_data = np.log10(mock_data)
 							ews = np.log10(ews)
@@ -436,15 +463,20 @@ class simulation:
 						# store the standard dev and mean of the dataset
 						self.std_dev[i,j] = np.std(mock_data[select_mock_bals])
 						self.mean[i,j] = np.mean(mock_data[select_mock_bals])
+						self.mean_qsos[i,j] =  np.mean(mock_data[select_mock_nonbals])
 
 						# store the attributes of the intrinsic gaussian
 						self.mu[i,j] = mu
 						self.sigma[i,j] = sig 
 
 
-						# make a histogram with chi for this run
-						ew1 = ews[self.s_nonbals]
-						ew2 = self.distribution(mu, sig, size = NPTS) / costhetas_qsos
+						#make a histogram with chi for this run
+						if thmin == 84 and thmax == 90:
+							ew1 = ews[self.s_nonbals]
+							ew2 = self.distribution(mu, sig, size = NPTS) / costhetas_qsos
+
+							make_plots.individual_scatter(self, thmin, thmax, ew1, ew2, self.chi2[i,j], self.bins)
+							sys.exit()
 
 						if self.saves != None:
 							for k in range(len(self.saves)):
@@ -461,10 +493,10 @@ class simulation:
 
 						print bal_frac, self.ks_p_value[i,j], self.chi2[i,j]
 
-						output_file.write("%i %i %.4f %.4f %8.4e %8.4e %8.4e %8.4e %8.4e %8.4e %8.4e\n" % 
-				     			(i, j, thmin, thmax, self.f_bal[i,j], self.mean[i,j], 
-			          			self.std_dev[i,j], self.ks_p_value[i,j], self.mu[i,j], self.sigma[i,j],
-			          			self.chi2[i,j]) )
+						#output_file.write("%i %i %.4f %.4f %8.4e %8.4e %8.4e %8.4e %8.4e %8.4e %8.4e %8.4e\n" % 
+				     	#		(i, j, thmin, thmax, self.f_bal[i,j], self.mean[i,j], 
+			          	#		self.std_dev[i,j], self.ks_p_value[i,j], self.mu[i,j], self.sigma[i,j],
+			          	#		self.chi2[i,j], self.mean_qsos[i,j]) )
 						
 						print 
 
@@ -519,11 +551,13 @@ def write_sim_to_file(sim, fname="simulation.out"):
 if __name__ == "__main__":
 
 	# define angles to run sim over
-	thetamin = np.arange(90,-1,-1)
-	thetamax = np.arange(90,-1,-1)
+	thetamin = np.arange(85,0,-5)
+	thetamax = np.arange(90,0,-5)
 
-	#thetamin = [50]
-	#thetamax = [85]
+	#thetamin = [84]
+	#thetamax = [90]
+	thetamin = np.array([70])
+	thetamax = np.array([90])
 
 	# get the data
 	data = sub.get_sample("data/catalog.dat")
@@ -540,7 +574,8 @@ if __name__ == "__main__":
 
 	LINE = "ew_o3"
 
-	SAVES = [(20,40), (50,75), (30,80)]
+	#SAVES = [(90,90), (20,40), (50,75), (30,80)]
+	SAVES=None
 
 	if source == "hst":
 
@@ -576,21 +611,25 @@ if __name__ == "__main__":
 		select = selection(data)
 
 
-	if mode == "max":
+	if mode == "max" or mode == "faceon":
+
+		print "here"
 
 		# set up sim
 		sim = simulation(thetamin, thetamax, data, select, line_string = LINE, mode=mode, source=source, saves = SAVES)
 
+		sim.distribution = np.random.lognormal
 		# run sim
 		sim.run(select)
 		#sim.run_gauss(select)
 
-		write_sim_to_file(sim, fname="simulation_%s_%s_%s.out" % (LINE, mode, source))
+		#write_sim_to_file(sim, fname="simulation_%s_%s_%s.out" % (LINE, mode, source))
 
 		# make the contour plots
-		make_plots.plot_contour(sim)
-		make_plots.fourbytwo(sim)
+		#make_plots.plot_contour(sim)
+		#make_plots.fourbytwo(sim)
 		#make_plots.plot_contour2(sim)
+		make_plots.p_max(sim)
 
 	if mode == "nomax":
 
@@ -603,16 +642,21 @@ if __name__ == "__main__":
 
 		# make the contour plots
 		#make_plots.plot_contour(sim)
-		write_sim_to_file(sim, fname="simulation_%s_%s_%s.out" % (LINE, mode, source))
-		make_plots.fourbytwo(sim)
+		#write_sim_to_file(sim, fname="simulation_%s_%s_%s.out" % (LINE, mode, source))
+		#make_plots.fourbytwo(sim)
 		#make_plots.plot_contour2(sim)
+		if mode == "faceon":
+			make_plots.cont_faceon(sim)
 
 	#elif mode == "read":
 
 	elif mode == "hist":
 
-		make_plots.make_hist(data, select)
+		sel = selection(data)
 
+		make_plots.make_hist2(data, sel)
+		#make_plots.radio_hist(data, sel)
+		#make_plots.radio_scatter(data, sel)
 		#mixedCase
 		#make_plots
 
