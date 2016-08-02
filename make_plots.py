@@ -765,7 +765,7 @@ def interpsmooth(x, y, val):
 
 
 
-def p_max(sim, mode="minmax"):
+def p_max(sim, mode="minmax", max_chi2 = 10):
 
 	'''
 	sim 
@@ -798,7 +798,7 @@ def p_max(sim, mode="minmax"):
 
 	subplot(2,2,2)
 	#contourf(sim.thetamax, sim.thetamin, sim.f_bal, extend='both', levels=np.arange(0,1,0.02), cmap=cm_use)
-	pcolormesh(sim.thetamax, sim.thetamin, sim.chi2, cmap=cm_use, vmin=0,vmax=50)
+	pcolormesh(sim.thetamax, sim.thetamin, sim.chi2, cmap=cm_use, vmin=0,vmax=max_chi2)
 	colorbar()
 	#contour(sim.thetamax, sim.thetamin, sim.f_bal, colors=('k',), linewidths=(2,), levels=[0.14,0.26,0.6])
 	#ylabel(r"$\theta_{min}$", fontsize=20)
@@ -843,7 +843,163 @@ def p_max(sim, mode="minmax"):
 
 
 
+def p_max3(sim, mode="minmax", max_chi2 = 10):
 
+	'''
+	sim 
+	instance of class simulation 
+	'''
+
+	plims = (-4,0)
+	mulims = (0,29)
+
+	if sim.distribution == np.random.normal:
+		chi2_lims = (0,50)
+	else:
+		chi2_lims = (0,6)
+
+
+	cm_use=get_viridis()
+	# below here it's just plotting...
+	big_tick_labels(16)
+	long_ticks()
+	figure(figsize=(17,7))
+
+	sim.f_bal = np.ma.masked_array(sim.f_bal, mask=(sim.f_bal == 0) )
+	sim.ks_p_value = np.ma.masked_array(sim.ks_p_value, mask=(sim.ks_p_value == 0) )
+	sim.mean = np.ma.masked_array(sim.mean, mask=(sim.mean == 0) )
+	sim.mean_qsos = np.ma.masked_array(sim.mean_qsos, mask=(sim.mean_qsos == 0) )
+	sim.chi2 = np.ma.masked_array(sim.chi2, mask=(sim.chi2 == 0) )
+
+	subplot(1,3,1)
+	#contourf(sim.thetamax, sim.thetamin, sim.f_bal, extend='both', levels=np.arange(0,1,0.02), cmap=cm_use)
+	pcolormesh(sim.thetamax, sim.thetamin, np.log10(sim.ks_p_value), cmap=cm_use, vmin=plims[0],vmax=plims[1])
+	colorbar()
+
+	#contour(sim.thetamax, sim.thetamin, sim.f_bal, colors=('k',), linewidths=(2,), levels=[0.14,0.26,0.6])
+	ylabel(r"$\theta_{min}$", fontsize=20)
+	#xlabel(r"$\theta_{max}$", fontsize=20)
+	#text(30,70,"$f_{BAL}$", fontsize=20)
+	gca().set_xticklabels([])
+	text(10,70,r"$\log(p_{KS})$", fontsize=20)
+	ylim(5,90)
+
+
+	subplot(1,3,2)
+	#contourf(sim.thetamax, sim.thetamin, sim.f_bal, extend='both', levels=np.arange(0,1,0.02), cmap=cm_use)
+	pcolormesh(sim.thetamax, sim.thetamin, sim.chi2, cmap=cm_use, vmin=0,vmax=chi2_lims[1])
+	colorbar()
+	#contour(sim.thetamax, sim.thetamin, sim.f_bal, colors=('k',), linewidths=(2,), levels=[0.14,0.26,0.6])
+	#ylabel(r"$\theta_{min}$", fontsize=20)
+	#xlabel(r"$\theta_{max}$", fontsize=20)
+	#text(30,70,"$f_{BAL}$", fontsize=20)
+	gca().set_yticklabels([])
+	gca().set_xticklabels([])
+	text(10,70,r"$\chi^2 / dof$", fontsize=20)
+	#gca().set_xticklabels([])
+	ylim(5,90)
+
+	subplot(1,3,3)
+	#contourf(sim.thetamax, sim.thetamin, sim.mean - sim.mean_qsos, extend="max", cmap=cm_use, levels=np.arange(0,100,1))
+	pcolormesh(sim.thetamax, sim.thetamin, sim.mean - sim.mean_qsos, cmap=cm_use, vmin=0,vmax=mulims[1])
+	colorbar()
+	gca().set_yticklabels([])
+	#ylabel(r"$\theta_{min}$", fontsize=20)
+	xlabel(r"$\theta_{max}$", fontsize=20)
+	text(10,70,r"$\Delta \mu_{EW}$", fontsize=20)
+	#gca().set_xticklabels([])
+	ylim(5,90)
+
+
+
+	subplots_adjust(left=0.05,right=0.97,top=0.97, bottom=0.06, wspace=0.02, hspace=0.02)
+	savefig("mesh3_%s_%s_%s.png" % (sim.line_string, sim.mode, sim.source), dpi=200)
+
+	return 0
+
+
+def single_fbal(sim):
+
+	cm_use=get_viridis()
+	# below here it's just plotting...
+	big_tick_labels(16)
+	long_ticks()
+	figure(figsize=(12,7))
+
+	subplot(121)
+
+	#sim.f_bal = np.ma.masked_array(sim.f_bal, mask=(sim.f_bal == 0) )
+	ii = interp2d(sim.thetamax, sim.thetamin, sim.f_bal, kind='linear')
+	thetamax_fine = np.arange(5,90.1,0.1)
+	thetamin_fine = np.arange(5,85.1,0.1)
+	z = ii(thetamax_fine, thetamin_fine)
+
+	#f_bal = 
+	#contourf(sim.thetamax, sim.thetamin, sim.f_bal, extend='both', levels=np.arange(0,1,0.02), cmap=cm_use)
+	#pcolormesh(sim.thetamax, sim.thetamin, sim.f_bal, cmap=cm_use, vmin=0,vmax=0.99)
+	pcolormesh(thetamax_fine, thetamin_fine, z, cmap=cm_use, vmin=0,vmax=0.99)
+	#colorbar()
+
+	contour(thetamax_fine, thetamin_fine, z, levels=(0.41,0.46,0.36, 0.17, 0.20, 0.14), 
+		    colors=("w","w","w", "r", "r", "r"), linewidths=(2,2,2, 2,2,2), linestyles=("-","--","--","-","--","--"))
+
+	#colorbar()
+	#contour(sim.thetamax, sim.thetamin, sim.f_bal, colors=('k',), linewidths=(2,), levels=[0.14,0.26,0.6])
+	ylabel(r"$\theta_{\mathrm{min}}$", fontsize=20)
+	xlabel(r"$\theta_{\mathrm{max}}$", fontsize=20)
+	#text(30,70,"$f_{BAL}$", fontsize=20)
+	#text(10,70,r"$f_{\mathrm{BAL}}$", fontsize=20, color="w")
+	text(10,70,r"Allen+ 2011", fontsize=16, color="w")
+	text(10,65,r"Knigge+ 2008", fontsize=16, color="r")
+	#text(10,70,r"$f_{\mathrm{BAL}}$", fontsize=20, color="w")
+	ylim(5,85)
+
+	print y.shape, x.shape
+
+	subplot(122)
+
+	xx = thetamin_fine
+	yy = thetamax_fine
+	shape = [len(xx), len(yy)]
+
+	thetas = np.zeros(shape)
+	fbals = np.zeros(shape)
+	covering_factors = np.zeros(shape)
+
+	for i, thmin in enumerate(xx):
+		for j, thmax in enumerate(yy):
+			thetas[i,j] = (0.5 * (thmin+thmax))
+			covering_factors[i,j] = (np.cos(thmin * np.pi / 180.0) - np.cos(thmax * np.pi / 180.0))
+			fbals[i,j] = ii(thmax, thmin)	
+
+	#ii = interp2d(covering_factors, thetas, fbals)
+
+	#covering_factor = np.arange(0,1,0.01)
+	#theta = np.arange(0,90,0.5)
+
+	#ff = ii(theta, covering_factor)
+	im = pcolormesh(thetas, covering_factors, fbals, cmap=cm_use)
+	#cbar = colorbar()
+
+	contour(thetas, covering_factors, fbals, levels=(0.41,0.46,0.36, 0.17, 0.20, 0.14), 
+		    colors=("w","w","w", "r", "r", "r"), linewidths=(2,2,2, 2,2,2), linestyles=("-","--","--","-","--","--"))
+	ylabel(r"$\Omega / 4 \pi$", fontsize=20)
+	xlabel(r"$\theta_{b}$", fontsize=20)
+	#colormap()
+	ylim(0,1)
+	xlim(5,90)
+
+
+	subplots_adjust(left=0.06,right=0.82)
+	cbar_ax = gcf().add_axes([0.85, 0.15, 0.05, 0.7])
+	cbar = colorbar(im, cax=cbar_ax)
+
+	cbar.set_label(r"$f_{\mathrm{BAL}}$", fontsize=20)
+
+	savefig("fbal.png", dpi=300)
+	clf()
+
+	return 0
 
 
 

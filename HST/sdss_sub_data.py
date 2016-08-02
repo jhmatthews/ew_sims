@@ -14,11 +14,11 @@ column_names = np.array(["z","Lbol", "bal_flag", "radio_flag",
 "l_c4", "ew_c4", "mbh_hbeta", "mbh_mg2", "mbh", "edd_frac","special_flag", "ra", "dec", "rflux","ew_fe_ha","ew_fe_hb", "ew_hb", "fwhm_hb"])
 
 
-label_columns = np.array(["$z$","$L_{bol}$", "bal flag", "radio flag", 
+label_columns = np.array(["$z$","$L_{\mathrm{bol}}$", "bal flag", "radio flag", 
 "$L_{5100}$", "$L_{3000}$", "$L_{1350}$", r"L[O~\textsc{iii}]", 
 r"EW[O~\textsc{iii}]", r"$L$[Mg~\textsc{ii}]", r"EW[Mg~\textsc{ii}]", 
 r"$L$[C~\textsc{iv}]", r"EW[C~\textsc{iv}]", r"$M_{BH}(H\beta)$", r"$M_{BH}({\rm Mg~textsc{ii}})$",
-"$M_{BH}$","$L/L_{edd}$","special flag", "RA", "Dec", "rflux",r"EW[Fe~\textsc{ii}]",r"EW[Fe~\textsc{ii}]"
+"$M_{\mathrm{BH}}$","$L/L_{\mathrm{Edd}}$","special flag", "RA", "Dec", "rflux",r"EW[Fe~\textsc{ii}]",r"EW[Fe~\textsc{ii}]"
 , r"FWHM[H$\beta$]", r"EW[H$\beta$]"])
 
 

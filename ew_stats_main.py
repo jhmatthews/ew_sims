@@ -34,32 +34,20 @@ def emissivity_function(costheta):
 	return costheta
 
 
-def is_source_detected(costheta):
+def is_source_detected(flux):
 	'''
 	apply a selection effect according to the emissivity_function
 	'''
 
 	# random number
-	dv = np.random.random()
-
-	r = np.power(dv, 1.0/3.0)
-
-	d = get_dist(r) * PARSEC
-
-	# now we've got a random distance proportional to volume
-	# get the flux assuming some luminosity (1e46?)
-	flux = (1e46 * emissivity_function(costheta)) / (4.0*np.pi*d*d)
-
-	# work out if above our detection limit which is abritrary at the moment
-	d_detect = get_dist(1.0) * PARSEC
-	detection_limit = 1e44 / (4.0*np.pi*d*d)
+	detection_limit = 10.0 ** (-12.3)
 
 	detected = (flux > detection_limit)
 
 	return detected
 
 
-def get_mock_angles(THRESHOLD, NPTS, max_angle=None):
+def get_mock_angles(THRESHOLD, NPTS, fluxes, max_angle=None):
 	'''
 	generate angles according to solid angle and 
 	apply selection effect 
@@ -82,7 +70,10 @@ def get_mock_angles(THRESHOLD, NPTS, max_angle=None):
 			costheta = np.random.random()
 			theta = (np.arccos(costheta) * 180.0 / np.pi)
 
-			detected = is_source_detected(costheta)
+			# select a random luminosity
+			flux = fluxes[np.random.randint(0,len(fluxes))] * costheta
+
+			detected = is_source_detected(flux)
 			#detected = True
 
 			if (theta > max_angle):
@@ -150,8 +141,8 @@ def get_bal_flags(angles, thmin, thmax):
 def function_to_minimize(params, ew_o_quasars, costhetas, distribution, bins):
 
 	'''
-	the function we have to minimise in order to uncover
-	the intrinsic underlying 'face-on' distribution. 
+	The reduced chi2 function we have to minimise in order to uncover
+	the intrinsic underlying 'face-on' distribution.
 
 	Parameters:
 
@@ -163,48 +154,60 @@ def function_to_minimize(params, ew_o_quasars, costhetas, distribution, bins):
 
 		costhetas 		array-like
 						cosines of theoretical angle distribution
+
+		distribution 	function
+						shape of intrinsic distribution
+
+		bins 			array-like 
+						array of bins 
+
+	Returns:
+		chi2/dof 		float 
+						reduced chi2 for this model
 	'''
 
+	# get our model parameters 
 	mu = params[0]
 	sigma = params[1]
 
-	#print params
-
+	# only allow positive values of mu and sigma
 	if mu <= 0 or sigma <= 0:
 		return 1e50
 
+	# intrinsic distribution
 	ewstar = distribution(mu, sigma, size=len(costhetas) )
 
+	# model distribution
 	ew_for_test = ewstar / costhetas
-	
 
-	'''
-	If the K-S statistic is small or the p-value is high, 
-	then we cannot reject the hypothesis that the distributions 
-	of the two samples are the same.
-	'''
-
-	# if we have different counts then we 
+	# if we have different counts then we need to renormalise
 	normalisation = float(len(ew_o_quasars)) / float(len(costhetas))
+	#normalisation = 1.0
 
-	f_ew_for_test = normalisation * histogram(ew_for_test, bins)[0]
+	# apply the normalisation 
+	f_ew_for_test = normalisation * histogram(ew_for_test, bins=bins)[0]
 	f_ewo = histogram(ew_o_quasars, bins=bins)[0]
 
 	# chi2 only really valid for counts > ~ 5, so mask others
 	select = (f_ewo > 0) * (f_ew_for_test > 0)
+	#select = (f_ewo > -1)
 
-	# is this correct?
-	# df2 = f_ewo + f_ew_for_test
+	# the variance is sigma**2, and sigma = sqrt(N). N=f_ewo, so variance is:
 	df2 = f_ewo
 
-	#chi2 = stats.chisquare(f_ewo, f_ew_for_test)
-	chi2_array = (f_ewo[select] - f_ew_for_test[select])**2
-	chi2_array /= df2[select]
+	# now we calculate chi squared
+	chi2_arr = (f_ewo[select] - f_ew_for_test[select])**2
+	chi2_arr /= df2[select]
+	chi2 = np.sum(chi2_arr)
 
-	chi2 = np.sum( chi2_array )
+	# degrees of freedom
+	dof = len(f_ewo[select]) - 3
+
+
+	#print chi2, dof
 
 	# return the reduced chi squared
-	return chi2 / (float(len(f_ewo[select]))-3)
+	return chi2/dof
 
 
 
@@ -321,7 +324,9 @@ class simulation:
 				self.s_bals = select.general * select.bal
 
 			self.s_nonbals =  select.general * select.nonbal 
-			self.distribution = np.random.normal
+			self.distribution = np.random.lognormal
+			self.R11 = select.R11
+
 
 		elif line_string == "ew_c4": # use log normal
 			self.s_bals = select.b * select.bal 
@@ -357,11 +362,12 @@ class simulation:
 		logbins = False
 
 		ew_obs = self.data[self.line_string][self.s_nonbals]
+		fluxes = self.data["L5100"][self.s_nonbals]
 
 		NPTS =	len(ew_obs)
 
 		if self.mode == "nomax":
-			costhetas, dummy = get_mock_angles(0.0, NPTS, max_angle=90.0)
+			costhetas, dummy = get_mock_angles(0.0, NPTS, fluxes, max_angle=90.0)
 
 		# place to write the simulation output
 		output_file = open("FO_simulation_%s_%s_%s.out" % (self.line_string, self.mode, self.source), "w")
@@ -381,11 +387,11 @@ class simulation:
 					if self.mode == "max":
 					# get angles above the threshold generated uniformly on sky
 					# and apply to EW measurements
-						costhetas_qsos, dummy = get_mock_angles(0.0, NPTS, max_angle=thmin)
-						costhetas, mock_bal_flags = get_mock_angles(thmin, NPTS, max_angle=thmax)
+						costhetas_qsos, dummy = get_mock_angles(0.0, NPTS, fluxes, max_angle=thmin)
+						costhetas, mock_bal_flags = get_mock_angles(thmin, NPTS, fluxes, max_angle=thmax)
 
 					elif self.mode == "faceon":
-						costhetas, mock_bal_flags = get_mock_angles(thmin, NPTS, max_angle=thmax)
+						costhetas, mock_bal_flags = get_mock_angles(thmin, NPTS, fluxes, max_angle=thmax)
 
 					elif self.mode == "nomax":
 						costhetas_qsos = get_qso_angles(NPTS, thmin, thmax)
@@ -471,12 +477,12 @@ class simulation:
 
 
 						#make a histogram with chi for this run
-						if thmin == 84 and thmax == 90:
-							ew1 = ews[self.s_nonbals]
-							ew2 = self.distribution(mu, sig, size = NPTS) / costhetas_qsos
+						#if thmin == 84 and thmax == 90:
+						#	ew1 = ews[self.s_nonbals]
+						#	ew2 = self.distribution(mu, sig, size = NPTS) / costhetas_qsos
 
-							make_plots.individual_scatter(self, thmin, thmax, ew1, ew2, self.chi2[i,j], self.bins)
-							sys.exit()
+						#	make_plots.individual_scatter(self, thmin, thmax, ew1, ew2, self.chi2[i,j], self.bins)
+						#	sys.exit()
 
 						if self.saves != None:
 							for k in range(len(self.saves)):
@@ -535,14 +541,14 @@ def write_sim_to_file(sim, fname="simulation.out"):
 	f = open(fname, "w")
 
 	f.write("# SIMULATION OUTPUT\n")
-	f.write("# i, j, thmin, thmax, f_bal, mean, std_dev, ks_p_value\n")
+	f.write("# i, j, thmin, thmax, f_bal, mean, std_dev, ks_p_value, delta_mu, chi2\n")
 
 	# create an array to write
 	for i, thmin in enumerate(sim.thetamin):
 		for j,thmax in enumerate(sim.thetamax):
-			f.write("%i %i %.4f %.4f %8.4e %8.4e %8.4e %8.4e\n" % 
+			f.write("%i %i %.4f %.4f %8.4e %8.4e %8.4e %8.4e %8.4e %8.4e\n" % 
 				     (i, j, thmin, thmax, sim.f_bal[i,j], sim.mean[i,j], 
-			          sim.std_dev[i,j], sim.ks_p_value[i,j]) )
+			          sim.std_dev[i,j], sim.ks_p_value[i,j], sim.mean - sim.mean_qsos, sim.chi2) )
 
 	f.close()
 
@@ -556,8 +562,8 @@ if __name__ == "__main__":
 
 	#thetamin = [84]
 	#thetamax = [90]
-	thetamin = np.array([70])
-	thetamax = np.array([90])
+	#thetamin = np.array([70])
+	#thetamax = np.array([90])
 
 	# get the data
 	data = sub.get_sample("data/catalog.dat")
@@ -618,12 +624,12 @@ if __name__ == "__main__":
 		# set up sim
 		sim = simulation(thetamin, thetamax, data, select, line_string = LINE, mode=mode, source=source, saves = SAVES)
 
-		sim.distribution = np.random.lognormal
+		sim.distribution = np.random.normal
 		# run sim
 		sim.run(select)
 		#sim.run_gauss(select)
 
-		#write_sim_to_file(sim, fname="simulation_%s_%s_%s.out" % (LINE, mode, source))
+		write_sim_to_file(sim, fname="simulation_%s_%s_%s.out" % (LINE, mode, source))
 
 		# make the contour plots
 		#make_plots.plot_contour(sim)
