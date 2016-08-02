@@ -14,7 +14,10 @@ from matplotlib.colors import LinearSegmentedColormap
 from scipy.optimize import curve_fit
 import make_plots
 import scipy.optimize as opt
+import ew_sub
 
+FLUX_LIMIT = 10.0 ** (-12.3)
+FLUX_LIMIT = 0.0
 colors = get_colors()
 
 def get_dist(z):
@@ -40,14 +43,49 @@ def is_source_detected(flux):
 	'''
 
 	# random number
-	detection_limit = 10.0 ** (-12.3)
+	detection_limit = FLUX_LIMIT
 
 	detected = (flux > detection_limit)
 
 	return detected
 
-
 def get_mock_angles(THRESHOLD, NPTS, fluxes, max_angle=None):
+	'''
+	generate angles according to solid angle and 
+	apply selection effect 
+
+	return flags of whether bal or not
+
+	This function uses a fortran subroutine instead of 
+	looping in python. It is dramatically faster than get_mock_angles
+	and should produce the same results (test).
+	'''
+
+	costhetas = np.zeros(NPTS)
+	bal_flags_use = np.zeros(NPTS, dtype="int32")
+	bal_flags = np.empty(NPTS, dtype="string")
+	nfluxes = int32(len(fluxes))
+	NPTS = int32(NPTS)
+	flux_limit = FLUX_LIMIT
+
+	if max_angle == None:
+		max_angle = 1e5
+
+	# use fortran subroutine, should be quicker
+	#print max_angle, THRESHOLD, nfluxes, npts, flux_limit    
+	ew_sub.get_mock_angles (costhetas, bal_flags_use, THRESHOLD, max_angle, 
+		                    fluxes, flux_limit, NPTS, nfluxes)
+	#ew_sub.get_mock_angles(costhetas, bal_flags_use, NPTS)
+
+	# convert to strings for use below
+	bal_flags[(bal_flags_use == 1)] = "b"
+	bal_flags[(bal_flags_use == 0)] = "q"
+
+
+	return costhetas, bal_flags
+
+
+def get_mock_angles2(THRESHOLD, NPTS, fluxes, max_angle=None):
 	'''
 	generate angles according to solid angle and 
 	apply selection effect 
@@ -581,7 +619,7 @@ if __name__ == "__main__":
 	LINE = "ew_o3"
 
 	#SAVES = [(90,90), (20,40), (50,75), (30,80)]
-	SAVES=None
+	SAVES = None
 
 	if source == "hst":
 
@@ -629,7 +667,7 @@ if __name__ == "__main__":
 		sim.run(select)
 		#sim.run_gauss(select)
 
-		write_sim_to_file(sim, fname="simulation_%s_%s_%s.out" % (LINE, mode, source))
+		#write_sim_to_file(sim, fname="simulation_%s_%s_%s.out" % (LINE, mode, source))
 
 		# make the contour plots
 		#make_plots.plot_contour(sim)
