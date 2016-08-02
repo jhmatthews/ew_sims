@@ -78,8 +78,9 @@
       end
 
 ! -------------------------------------------------
-!     function get_mock_angles
-!     This function generates mock angles for quasars. 
+!     subroutine is_source_detected
+!     This function selects a random flux and imposes a flux rejection limit.
+!     It modifies the logical variable undetected to reflect this.
 !     Arguments:
 !       costheta      float. cosine of angle in question
 !       undetected    bool. should be false on entry 
