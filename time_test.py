@@ -17,8 +17,8 @@ NPTS = 14424
 
 print "all set up"
 
-thmin = 80
-thmax = 85
+thmin = 5
+thmax = 10
 t1 = time.time()
 
 #costhetas_qsos, dummy = ew.get_mock_angles2(0.0, NPTS, fluxes, max_angle=thmin)
